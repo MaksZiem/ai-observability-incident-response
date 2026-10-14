@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { generateApiKey } from './api-key.js';
 import { CreateProjectDto } from './dto/create-project.dto.js';
 import { UpdateProjectDto } from './dto/update-project.dto.js';
 import { Project } from './entities/project.entity.js';
+import { generateApiKey, hashApiKey } from './api-key.js';
 
 export interface ProjectWithApiKey {
   project: Project;
@@ -33,6 +33,12 @@ export class ProjectsService {
     }
 
     return project;
+  }
+
+  findByApiKey(apiKey: string): Promise<Project | null> {
+    return this.projectsRepository.findOneBy({
+      apiKeyHash: hashApiKey(apiKey),
+    });
   }
 
   async create(

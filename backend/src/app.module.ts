@@ -6,6 +6,8 @@ import { createDataSourceOptions } from './database/database.options.js';
 import { UsersModule } from './users/users.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { ProjectsModule } from './projects/projects.module.js';
+import { IngestModule } from './ingest/ingest.module.js';
+import { LogsModule } from './logs/logs.module.js';
 
 @Module({
   imports: [
@@ -21,6 +23,8 @@ import { ProjectsModule } from './projects/projects.module.js';
     UsersModule,
     AuthModule,
     ProjectsModule,
+    LogsModule,
+    IngestModule,
   ],
 })
 export class AppModule {}
