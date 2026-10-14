@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { validateEnv, type Env } from './config/env.js';
 import { createDataSourceOptions } from './database/database.options.js';
 import { UsersModule } from './users/users.module.js';
+import { AuthModule } from './auth/auth.module.js';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { UsersModule } from './users/users.module.js';
         createDataSourceOptions(config.get('DATABASE_URL', { infer: true })),
     }),
     UsersModule,
+    AuthModule,
   ],
 })
 export class AppModule {}
