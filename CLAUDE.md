@@ -3,7 +3,15 @@
   CLAUDE pokazuje kod do przepisania, ze ścieżką pliku i krótkim wyjaśnieniem
   co i dlaczego.
 - CLAUDE sam edytuje pliki na backendzie tylko jesli ja go poprosze
-- Dzielimy pracę na małe kroki, jeden plik lub koncept na raz.
+- Dzielimy pracę na kroki, ale w jednej odpowiedzi Claude podaje kilka
+  powiązanych kroków naraz, każdy w osobnej sekcji z nagłówkiem
+  (np. „Krok 2: UsersService”).
+- Przy każdej ścieżce pliku Claude oznacza, czy to **nowy plik**, czy
+  **zmiana w istniejącym pliku**.
+- Gdy napiszę, że przepisałem kroki, Claude najpierw czyta moje pliki
+  i sprawdza je z tym, co pokazał. Jeśli coś jest źle, wypisuje co
+  i gdzie (plik:linia, dlaczego), ale nie poprawia. Poprawiam sam albo
+  proszę Claude'a o poprawkę. Dopiero potem kolejne kroki.
 - Gdy poproszę o review, Claude czyta moje pliki i wskazuje błędy,
   ale ich nie poprawia.
 - Frontend (`frontend/`): piszę SAMODZIELNIE w celach nauki.
