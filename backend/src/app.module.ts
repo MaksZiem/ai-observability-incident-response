@@ -5,6 +5,7 @@ import { validateEnv, type Env } from './config/env.js';
 import { createDataSourceOptions } from './database/database.options.js';
 import { UsersModule } from './users/users.module.js';
 import { AuthModule } from './auth/auth.module.js';
+import { ProjectsModule } from './projects/projects.module.js';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { AuthModule } from './auth/auth.module.js';
     }),
     UsersModule,
     AuthModule,
+    ProjectsModule,
   ],
 })
 export class AppModule {}
