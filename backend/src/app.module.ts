@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { ProjectsModule } from './projects/projects.module.js';
 import { IngestModule } from './ingest/ingest.module.js';
 import { LogsModule } from './logs/logs.module.js';
+import { TracesModule } from './traces/traces.module.js';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { LogsModule } from './logs/logs.module.js';
     AuthModule,
     ProjectsModule,
     LogsModule,
+    TracesModule,
     IngestModule,
   ],
 })
