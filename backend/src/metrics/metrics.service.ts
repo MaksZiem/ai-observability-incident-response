@@ -51,7 +51,21 @@ export class MetricsService {
       query.service,
     ).getRawOne<RawRequestStats>();
 
-    const rows = await this.requestsQuery(projectId, range, query.service)
+    return {
+      from: range.from,
+      to: range.to,
+      stepMs: range.stepMs,
+      summary: toRequestStats(summary),
+      series: await this.getSeries(projectId, range, query.service),
+    };
+  }
+
+  async getSeries(
+    projectId: string,
+    range: ResolvedTimeRange,
+    service?: string,
+  ): Promise<SeriesPoint[]> {
+    const rows = await this.requestsQuery(projectId, range, service)
       .addSelect(
         'date_bin(CAST(:step AS interval), span.startTime, CAST(:origin AS timestamptz))',
         'bucket',
@@ -65,16 +79,10 @@ export class MetricsService {
       rows.map((row) => [new Date(row.bucket).getTime(), row]),
     );
 
-    return {
-      from: range.from,
-      to: range.to,
-      stepMs: range.stepMs,
-      summary: toRequestStats(summary),
-      series: bucketStarts(range).map((bucket) => ({
-        bucket,
-        ...toRequestStats(byBucket.get(bucket.getTime())),
-      })),
-    };
+    return bucketStarts(range).map((bucket) => ({
+      bucket,
+      ...toRequestStats(byBucket.get(bucket.getTime())),
+    }));
   }
 
   async getServices(

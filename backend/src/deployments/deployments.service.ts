@@ -4,6 +4,7 @@ import {
   And,
   FindOperator,
   FindOptionsWhere,
+  In,
   IsNull,
   LessThanOrEqual,
   MoreThanOrEqual,
@@ -41,6 +42,14 @@ export class DeploymentsService {
     }
 
     return deployment;
+  }
+
+  findByIds(projectId: string, ids: string[]): Promise<Deployment[]> {
+    if (ids.length === 0) {
+      return Promise.resolve([]);
+    }
+
+    return this.deploymentsRepository.findBy({ projectId, id: In(ids) });
   }
 
   findAll(

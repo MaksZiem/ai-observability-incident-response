@@ -77,6 +77,17 @@ export class LogsService {
     return log;
   }
 
+  findByIds(projectId: string, ids: string[]): Promise<Log[]> {
+    if (ids.length === 0) {
+      return Promise.resolve([]);
+    }
+
+    return this.logsRepository.find({
+      where: { projectId, id: In(ids) },
+      order: { timestamp: 'ASC' },
+    });
+  }
+
   private buildWhere(
     projectId: string,
     query: ListLogsQueryDto,

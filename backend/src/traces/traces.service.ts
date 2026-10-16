@@ -4,6 +4,7 @@ import {
   And,
   FindOperator,
   FindOptionsWhere,
+  In,
   IsNull,
   LessThanOrEqual,
   MoreThanOrEqual,
@@ -70,5 +71,24 @@ export class TracesService {
     }
 
     return buildTraceDetail(traceId, spans);
+  }
+
+  async findByTraceIds(
+    projectId: string,
+    traceIds: string[],
+  ): Promise<TraceDetail[]> {
+    if (traceIds.length === 0) {
+      return [];
+    }
+
+    const spans = await this.spansRepository.find({
+      where: { projectId, traceId: In(traceIds) },
+      order: { startTime: 'ASC' },
+    });
+
+    return traceIds
+      .map((traceId) => spans.filter((span) => span.traceId === traceId))
+      .filter((traceSpans) => traceSpans.length > 0)
+      .map((traceSpans) => buildTraceDetail(traceSpans[0].traceId, traceSpans));
   }
 }

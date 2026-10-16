@@ -1,9 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
+  Between,
   DataSource,
   EntityManager,
   FindOptionsWhere,
+  In,
   LessThan,
   MoreThan,
   Repository,
@@ -94,6 +96,26 @@ export class ErrorsService {
     }
 
     return group;
+  }
+
+  findByIds(projectId: string, ids: string[]): Promise<ErrorGroup[]> {
+    if (ids.length === 0) {
+      return Promise.resolve([]);
+    }
+
+    return this.groupsRepository.findBy({ projectId, id: In(ids) });
+  }
+
+  findFirstSeenBetween(
+    projectId: string,
+    from: Date,
+    to: Date,
+  ): Promise<ErrorGroup[]> {
+    return this.groupsRepository.find({
+      where: { projectId, firstSeen: Between(from, to) },
+      order: { firstSeen: 'ASC' },
+      take: 20,
+    });
   }
 
   async findEvents(

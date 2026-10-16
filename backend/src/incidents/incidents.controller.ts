@@ -19,12 +19,14 @@ import { CreateIncidentNoteDto } from './dto/create-incident-note.dto.js';
 import { CreateIncidentDto } from './dto/create-incident.dto.js';
 import { ListIncidentsQueryDto } from './dto/list-incidents-query.dto.js';
 import { UpdateIncidentDto } from './dto/update-incident.dto.js';
+import { IncidentEvidenceService } from './incident-evidence.service.js';
 import { IncidentsService } from './incidents.service.js';
 
 @Controller('projects/:projectId/incidents')
 export class IncidentsController {
   constructor(
     private readonly incidentsService: IncidentsService,
+    private readonly evidenceService: IncidentEvidenceService,
     private readonly projectsService: ProjectsService,
   ) {}
 
@@ -67,6 +69,26 @@ export class IncidentsController {
   ) {
     await this.projectsService.findOne(projectId, user.sub);
     return this.incidentsService.update(projectId, id, dto);
+  }
+
+  @Get(':id/evidence')
+  async getEvidence(
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    await this.projectsService.findOne(projectId, user.sub);
+    return this.evidenceService.getEvidence(projectId, id);
+  }
+
+  @Get(':id/timeline')
+  async getTimeline(
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    await this.projectsService.findOne(projectId, user.sub);
+    return this.evidenceService.getTimeline(projectId, id);
   }
 
   @Get(':id/notes')

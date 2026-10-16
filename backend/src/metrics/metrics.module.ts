@@ -9,5 +9,6 @@ import { MetricsService } from './metrics.service.js';
   imports: [TypeOrmModule.forFeature([Span]), ProjectsModule],
   controllers: [MetricsController],
   providers: [MetricsService],
+  exports: [MetricsService],
 })
 export class MetricsModule {}
