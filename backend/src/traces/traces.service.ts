@@ -11,7 +11,7 @@ import {
 } from 'typeorm';
 import { CreateSpanDto } from './dto/create-span.dto.js';
 import { ListTracesQueryDto } from './dto/list-traces-query.dto.js';
-import { Span } from './entities/span.entity.js';
+import { Span, SpanKind } from './entities/span.entity.js';
 import { buildTraceDetail, TraceDetail } from './trace-detail.js';
 
 @Injectable()
@@ -25,6 +25,8 @@ export class TracesService {
       this.spansRepository.create({
         ...dto,
         projectId,
+        kind:
+          dto.kind ?? (dto.parentSpanId ? SpanKind.INTERNAL : SpanKind.SERVER),
         startTime: new Date(dto.startTime),
       }),
     );

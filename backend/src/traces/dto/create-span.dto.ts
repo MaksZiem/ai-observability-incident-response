@@ -10,7 +10,7 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import { SpanStatus } from '../entities/span.entity.js';
+import { SpanKind, SpanStatus } from '../entities/span.entity.js';
 
 export class CreateSpanDto {
   @IsString()
@@ -37,6 +37,10 @@ export class CreateSpanDto {
   @IsNotEmpty()
   @MaxLength(255)
   name: string;
+
+  @IsOptional()
+  @IsEnum(SpanKind)
+  kind?: SpanKind;
 
   @IsOptional()
   @IsEnum(SpanStatus)

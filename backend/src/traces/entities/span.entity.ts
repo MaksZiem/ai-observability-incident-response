@@ -14,6 +14,12 @@ export enum SpanStatus {
   ERROR = 'error',
 }
 
+export enum SpanKind {
+  SERVER = 'server',
+  CLIENT = 'client',
+  INTERNAL = 'internal',
+}
+
 @Entity('spans')
 @Index(['projectId', 'traceId'])
 @Index(['projectId', 'startTime'])
@@ -42,6 +48,9 @@ export class Span {
 
   @Column({ type: 'varchar', length: 255 })
   name: string;
+
+  @Column({ type: 'enum', enum: SpanKind, default: SpanKind.INTERNAL })
+  kind: SpanKind;
 
   @Column({ type: 'enum', enum: SpanStatus, default: SpanStatus.OK })
   status: SpanStatus;

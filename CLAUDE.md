@@ -789,6 +789,43 @@ The system should monitor:
 
 The platform should never silently lose telemetry.
 
+## Asynchronous Ingestion Queue
+
+Ingestion should be decoupled from storage.
+
+The initial version writes telemetry to the database synchronously
+during the ingest request. A later stage should introduce a queue:
+
+```text
+SDK
+ │  POST /api/ingest/*
+ ↓
+Ingest API (API key + validation)
+ │  enqueue batch
+ ↓
+Queue (e.g. Redis + BullMQ)
+ │
+ ↓
+Worker
+ │  retries, dead-letter queue
+ ↓
+Storage
+```
+
+Requirements:
+
+* ingest endpoints respond `202 Accepted` without waiting for the database,
+* traffic spikes are absorbed by the queue,
+* a temporary database outage does not lose telemetry,
+* failed jobs are retried, then moved to a dead-letter queue,
+* queue depth and failed jobs are exposed as platform health metrics,
+* the public ingest contract (URLs, payloads, responses) does not change,
+* domain services (`LogsService`, `TracesService`, `ErrorsService`)
+  are reused by the worker without changes.
+
+This stage should be implemented after the core modules
+(deployments, metrics, incidents, AI analysis).
+
 ---
 
 # 25. Security
@@ -828,6 +865,30 @@ Possible future functionality:
 * automated incident reports.
 
 These should not be required for the initial implementation.
+
+## Idea under consideration: OpenTelemetry (OTLP) ingestion
+
+Not decided. An optional direction to evaluate after the core modules.
+
+Instead of (or in addition to) a custom SDK, the platform could accept
+data in the OpenTelemetry format (OTLP over HTTP, JSON encoding):
+
+```text
+POST /api/otlp/v1/traces  → spans + error events (span "exception" events)
+POST /api/otlp/v1/logs    → logs
+```
+
+The client application would connect without code changes, using
+OpenTelemetry auto-instrumentation and environment variables
+(`OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS=x-api-key=...`).
+
+Assumptions if implemented:
+
+* a separate `otlp/` module that maps OTLP payloads to existing DTOs,
+* the same `ApiKeyGuard` and domain services are reused,
+* existing `/api/ingest/*` endpoints remain (deployments, tests, seeding).
+
+Alternative: a custom lightweight SDK (middleware, logger, batching).
 
 ---
 
