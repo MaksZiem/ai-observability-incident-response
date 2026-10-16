@@ -10,6 +10,7 @@ import { IngestModule } from './ingest/ingest.module.js';
 import { LogsModule } from './logs/logs.module.js';
 import { TracesModule } from './traces/traces.module.js';
 import { ErrorsModule } from './errors/errors.module.js';
+import { DeploymentsModule } from './deployments/deployments.module.js';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { ErrorsModule } from './errors/errors.module.js';
     LogsModule,
     TracesModule,
     ErrorsModule,
+    DeploymentsModule,
     IngestModule,
   ],
 })

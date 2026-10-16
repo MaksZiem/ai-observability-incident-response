@@ -7,6 +7,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Public } from '../auth/decorators/public.decorator.js';
+import { DeploymentsService } from '../deployments/deployments.service.js';
+import { CreateDeploymentDto } from '../deployments/dto/create-deployment.dto.js';
 import { ErrorsService } from '../errors/errors.service.js';
 import { LogsService } from '../logs/logs.service.js';
 import type { Project } from '../projects/entities/project.entity.js';
@@ -25,6 +27,7 @@ export class IngestController {
     private readonly logsService: LogsService,
     private readonly tracesService: TracesService,
     private readonly errorsService: ErrorsService,
+    private readonly deploymentsService: DeploymentsService,
   ) {}
 
   @Post('logs')
@@ -55,5 +58,13 @@ export class IngestController {
   ) {
     await this.errorsService.ingest(project.id, dto.errors);
     return { accepted: dto.errors.length };
+  }
+
+  @Post('deployments')
+  ingestDeployment(
+    @Body() dto: CreateDeploymentDto,
+    @CurrentProject() project: Project,
+  ) {
+    return this.deploymentsService.create(project.id, dto);
   }
 }

@@ -33,6 +33,10 @@
 - Bez surowego SQL w kodzie aplikacji (`dataSource.query(...)`,
   `queryRunner.query(...)` itp.) — wszystko przez repozytoria i metody TypeORM.
   Wyjątek: pliki migracji generowane przez TypeORM.
+  Dozwolony jest QueryBuilder z wyrażeniami SQL w `.select()`/`.where()`
+  tam, gdzie `find()` nie wystarcza (agregacje: `COUNT`, `percentile_cont`,
+  `date_bin`, `GROUP BY`). Wartości zawsze przez parametry (`:nazwa`),
+  nigdy przez sklejanie stringów.
 - Zmiany struktury bazy tylko przez migracje (`synchronize: false`).
 - Projekt jest ESM — importy własnych plików z końcówką `.js`.
 - Zmienne środowiskowe walidowane przez Zod w `src/config/env.ts`,
