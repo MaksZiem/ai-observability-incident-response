@@ -7,9 +7,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Public } from '../auth/decorators/public.decorator.js';
+import { ErrorsService } from '../errors/errors.service.js';
 import { LogsService } from '../logs/logs.service.js';
 import type { Project } from '../projects/entities/project.entity.js';
 import { CurrentProject } from './decorators/current-project.decorator.js';
+import { IngestErrorsDto } from './dto/ingest-errors.dto.js';
 import { IngestLogsDto } from './dto/ingest-logs.dto.js';
 import { ApiKeyGuard } from './guards/api-key.guard.js';
 import { TracesService } from '../traces/traces.service.js';
@@ -22,6 +24,7 @@ export class IngestController {
   constructor(
     private readonly logsService: LogsService,
     private readonly tracesService: TracesService,
+    private readonly errorsService: ErrorsService,
   ) {}
 
   @Post('logs')
@@ -42,5 +45,15 @@ export class IngestController {
   ) {
     await this.tracesService.createMany(project.id, dto.spans);
     return { accepted: dto.spans.length };
+  }
+
+  @Post('errors')
+  @HttpCode(HttpStatus.ACCEPTED)
+  async ingestErrors(
+    @Body() dto: IngestErrorsDto,
+    @CurrentProject() project: Project,
+  ) {
+    await this.errorsService.ingest(project.id, dto.errors);
+    return { accepted: dto.errors.length };
   }
 }
