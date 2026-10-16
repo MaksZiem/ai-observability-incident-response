@@ -12,6 +12,7 @@ import { TracesModule } from './traces/traces.module.js';
 import { ErrorsModule } from './errors/errors.module.js';
 import { DeploymentsModule } from './deployments/deployments.module.js';
 import { MetricsModule } from './metrics/metrics.module.js';
+import { IncidentsModule } from './incidents/incidents.module.js';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { MetricsModule } from './metrics/metrics.module.js';
     ErrorsModule,
     DeploymentsModule,
     MetricsModule,
+    IncidentsModule,
     IngestModule,
   ],
 })

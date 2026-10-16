@@ -39,6 +39,10 @@ export class Project {
   @Column({ type: 'varchar', length: 16 })
   apiKeyPrefix: string;
 
+  @Exclude()
+  @Column({ type: 'int', default: 0 })
+  lastIncidentNumber: number;
+
   @Index()
   @Column()
   userId: string;

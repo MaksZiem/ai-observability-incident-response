@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   And,
@@ -28,6 +28,19 @@ export class DeploymentsService {
     });
 
     return this.deploymentsRepository.save(deployment);
+  }
+
+  async findOne(projectId: string, id: string): Promise<Deployment> {
+    const deployment = await this.deploymentsRepository.findOneBy({
+      id,
+      projectId,
+    });
+
+    if (!deployment) {
+      throw new NotFoundException(`Deployment ${id} not found`);
+    }
+
+    return deployment;
   }
 
   findAll(
