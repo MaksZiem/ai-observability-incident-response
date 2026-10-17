@@ -12,6 +12,8 @@ import {
 } from 'typeorm';
 import { CreateDeploymentDto } from './dto/create-deployment.dto.js';
 import { ListDeploymentsQueryDto } from './dto/list-deployments-query.dto.js';
+import { ProjectEventType } from '../realtime/project-event.js';
+import { RealtimeService } from '../realtime/realtime.service.js';
 import { Deployment } from './entities/deployment.entity.js';
 
 @Injectable()
@@ -19,16 +21,28 @@ export class DeploymentsService {
   constructor(
     @InjectRepository(Deployment)
     private readonly deploymentsRepository: Repository<Deployment>,
+    private readonly realtimeService: RealtimeService,
   ) {}
 
-  create(projectId: string, dto: CreateDeploymentDto): Promise<Deployment> {
-    const deployment = this.deploymentsRepository.create({
-      ...dto,
-      projectId,
-      deployedAt: dto.deployedAt ? new Date(dto.deployedAt) : new Date(),
-    });
+  async create(
+    projectId: string,
+    dto: CreateDeploymentDto,
+  ): Promise<Deployment> {
+    const deployment = await this.deploymentsRepository.save(
+      this.deploymentsRepository.create({
+        ...dto,
+        projectId,
+        deployedAt: dto.deployedAt ? new Date(dto.deployedAt) : new Date(),
+      }),
+    );
 
-    return this.deploymentsRepository.save(deployment);
+    this.realtimeService.publish(
+      projectId,
+      ProjectEventType.DEPLOYMENT_CREATED,
+      { deploymentId: deployment.id, version: deployment.version },
+    );
+
+    return deployment;
   }
 
   async findOne(projectId: string, id: string): Promise<Deployment> {

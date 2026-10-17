@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import type { Incident } from '../incidents/entities/incident.entity.js';
 import { IncidentEvidenceService } from '../incidents/incident-evidence.service.js';
 import { IncidentsService } from '../incidents/incidents.service.js';
+import { ProjectEventType } from '../realtime/project-event.js';
+import { RealtimeService } from '../realtime/realtime.service.js';
 import { SimilarIncidentsService } from '../incidents/similar-incidents.service.js';
 import { AnalysisModel } from './analysis-model.js';
 import { buildAnalysisPrompt } from './analysis-prompt.js';
@@ -23,6 +25,7 @@ export class AnalysisService {
     private readonly evidenceService: IncidentEvidenceService,
     private readonly similarService: SimilarIncidentsService,
     private readonly analysisModel: AnalysisModel,
+    private readonly realtimeService: RealtimeService,
   ) {}
 
   async request(
@@ -81,6 +84,8 @@ export class AnalysisService {
     incident: Incident,
     analysisId: string,
   ): Promise<void> {
+    let status = AnalysisStatus.COMPLETED;
+
     try {
       const [timeline, evidence, similar] = await Promise.all([
         this.evidenceService.getTimeline(projectId, incident.id),
@@ -103,6 +108,7 @@ export class AnalysisService {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.warn(`Analysis ${analysisId} failed: ${message}`);
+      status = AnalysisStatus.FAILED;
 
       await this.analysesRepository.update(analysisId, {
         status: AnalysisStatus.FAILED,
@@ -110,5 +116,15 @@ export class AnalysisService {
         completedAt: new Date(),
       });
     }
+
+    this.realtimeService.publish(
+      projectId,
+      ProjectEventType.ANALYSIS_FINISHED,
+      {
+        incidentId: incident.id,
+        analysisId,
+        status,
+      },
+    );
   }
 }

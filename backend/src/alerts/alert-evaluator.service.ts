@@ -4,6 +4,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { IncidentsService } from '../incidents/incidents.service.js';
 import { MetricsService } from '../metrics/metrics.service.js';
+import { ProjectEventType } from '../realtime/project-event.js';
+import { RealtimeService } from '../realtime/realtime.service.js';
 import {
   AlertTransition,
   describeCondition,
@@ -28,6 +30,7 @@ export class AlertEvaluatorService {
     private readonly rulesRepository: Repository<AlertRule>,
     private readonly metricsService: MetricsService,
     private readonly incidentsService: IncidentsService,
+    private readonly realtimeService: RealtimeService,
   ) {}
 
   @Interval(EVALUATION_INTERVAL_MS)
@@ -92,6 +95,14 @@ export class AlertEvaluatorService {
     }
 
     await this.rulesRepository.update(rule.id, state);
+
+    if (transition) {
+      this.realtimeService.publish(
+        rule.projectId,
+        ProjectEventType.ALERT_CHANGED,
+        { alertRuleId: rule.id, status: state.status },
+      );
+    }
 
     return { ...rule, ...state };
   }

@@ -17,6 +17,8 @@ import {
 } from 'typeorm';
 import { CreateLogDto } from './dto/create-log.dto.js';
 import { ListLogsQueryDto } from './dto/list-logs-query.dto.js';
+import { ProjectEventType } from '../realtime/project-event.js';
+import { RealtimeService } from '../realtime/realtime.service.js';
 import { Log } from './entities/log.entity.js';
 import { decodeLogCursor, encodeLogCursor, LogCursor } from './log-cursor.js';
 
@@ -29,6 +31,7 @@ export interface LogPage {
 export class LogsService {
   constructor(
     @InjectRepository(Log) private readonly logsRepository: Repository<Log>,
+    private readonly realtimeService: RealtimeService,
   ) {}
 
   async createMany(projectId: string, dtos: CreateLogDto[]): Promise<void> {
@@ -43,6 +46,10 @@ export class LogsService {
     );
 
     await this.logsRepository.save(logs);
+
+    this.realtimeService.publish(projectId, ProjectEventType.LOGS_INGESTED, {
+      count: logs.length,
+    });
   }
 
   async findAll(projectId: string, query: ListLogsQueryDto): Promise<LogPage> {

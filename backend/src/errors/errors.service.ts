@@ -17,6 +17,8 @@ import { UpdateErrorGroupDto } from './dto/update-error-group.dto.js';
 import { ErrorEvent } from './entities/error-event.entity.js';
 import { ErrorGroup, ErrorStatus } from './entities/error-group.entity.js';
 import { computeFingerprint } from './fingerprint.js';
+import { ProjectEventType } from '../realtime/project-event.js';
+import { RealtimeService } from '../realtime/realtime.service.js';
 
 interface PreparedEvent {
   dto: CreateErrorEventDto;
@@ -31,6 +33,7 @@ export class ErrorsService {
     @InjectRepository(ErrorEvent)
     private readonly eventsRepository: Repository<ErrorEvent>,
     private readonly dataSource: DataSource,
+    private readonly realtimeService: RealtimeService,
   ) {}
 
   async ingest(projectId: string, dtos: CreateErrorEventDto[]): Promise<void> {
@@ -47,6 +50,7 @@ export class ErrorsService {
     }
 
     const fingerprints = [...batches.keys()].sort();
+    const groupIds: string[] = [];
 
     await this.dataSource.transaction(async (manager) => {
       for (const fingerprint of fingerprints) {
@@ -57,6 +61,7 @@ export class ErrorsService {
           fingerprint,
           events,
         );
+        groupIds.push(group.id);
 
         await manager.save(
           events.map(({ dto, timestamp }) =>
@@ -69,6 +74,11 @@ export class ErrorsService {
           ),
         );
       }
+    });
+
+    this.realtimeService.publish(projectId, ProjectEventType.ERRORS_INGESTED, {
+      count: dtos.length,
+      groupIds,
     });
   }
 

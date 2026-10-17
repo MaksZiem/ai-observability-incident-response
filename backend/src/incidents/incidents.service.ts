@@ -11,6 +11,8 @@ import { DeploymentsService } from '../deployments/deployments.service.js';
 import { ErrorsService } from '../errors/errors.service.js';
 import { LogsService } from '../logs/logs.service.js';
 import { Project } from '../projects/entities/project.entity.js';
+import { ProjectEventType } from '../realtime/project-event.js';
+import { RealtimeService } from '../realtime/realtime.service.js';
 import { TracesService } from '../traces/traces.service.js';
 import { CreateIncidentLinkDto } from './dto/create-incident-link.dto.js';
 import { CreateIncidentNoteDto } from './dto/create-incident-note.dto.js';
@@ -39,14 +41,15 @@ export class IncidentsService {
     private readonly tracesService: TracesService,
     private readonly deploymentsService: DeploymentsService,
     private readonly logsService: LogsService,
+    private readonly realtimeService: RealtimeService,
   ) {}
 
-  create(
+  async create(
     projectId: string,
     userId: string,
     dto: CreateIncidentDto,
   ): Promise<Incident> {
-    return this.dataSource.transaction(async (manager) => {
+    const incident = await this.dataSource.transaction(async (manager) => {
       await manager.increment(
         Project,
         { id: projectId },
@@ -69,6 +72,9 @@ export class IncidentsService {
         }),
       );
     });
+
+    this.notifyChanged(incident);
+    return incident;
   }
 
   findAll(
@@ -118,7 +124,9 @@ export class IncidentsService {
       applyStatus(incident, status, new Date());
     }
 
-    return this.incidentsRepository.save(incident);
+    const saved = await this.incidentsRepository.save(incident);
+    this.notifyChanged(saved);
+    return saved;
   }
 
   async findNotes(projectId: string, id: string): Promise<IncidentNote[]> {
@@ -139,13 +147,16 @@ export class IncidentsService {
   ): Promise<IncidentNote> {
     const incident = await this.findOne(projectId, id);
 
-    return this.notesRepository.save(
+    const note = await this.notesRepository.save(
       this.notesRepository.create({
         ...dto,
         incidentId: incident.id,
         authorId: userId,
       }),
     );
+
+    this.notifyChanged(incident);
+    return note;
   }
 
   async findLinks(projectId: string, id: string): Promise<IncidentLink[]> {
@@ -196,6 +207,14 @@ export class IncidentsService {
     }
 
     await this.linksRepository.remove(link);
+  }
+
+  private notifyChanged(incident: Incident): void {
+    this.realtimeService.publish(
+      incident.projectId,
+      ProjectEventType.INCIDENT_CHANGED,
+      { incidentId: incident.id, status: incident.status },
+    );
   }
 
   private async assertTargetExists(

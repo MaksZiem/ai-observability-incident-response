@@ -12,6 +12,8 @@ import {
 } from 'typeorm';
 import { CreateSpanDto } from './dto/create-span.dto.js';
 import { ListTracesQueryDto } from './dto/list-traces-query.dto.js';
+import { ProjectEventType } from '../realtime/project-event.js';
+import { RealtimeService } from '../realtime/realtime.service.js';
 import { Span, SpanKind } from './entities/span.entity.js';
 import { buildTraceDetail, TraceDetail } from './trace-detail.js';
 
@@ -19,6 +21,7 @@ import { buildTraceDetail, TraceDetail } from './trace-detail.js';
 export class TracesService {
   constructor(
     @InjectRepository(Span) private readonly spansRepository: Repository<Span>,
+    private readonly realtimeService: RealtimeService,
   ) {}
 
   async createMany(projectId: string, dtos: CreateSpanDto[]): Promise<void> {
@@ -33,6 +36,10 @@ export class TracesService {
     );
 
     await this.spansRepository.save(spans);
+
+    this.realtimeService.publish(projectId, ProjectEventType.SPANS_INGESTED, {
+      count: spans.length,
+    });
   }
 
   findAll(projectId: string, query: ListTracesQueryDto): Promise<Span[]> {

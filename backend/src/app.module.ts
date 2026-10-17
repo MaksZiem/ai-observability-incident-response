@@ -16,6 +16,7 @@ import { MetricsModule } from './metrics/metrics.module.js';
 import { IncidentsModule } from './incidents/incidents.module.js';
 import { AnalysisModule } from './analysis/analysis.module.js';
 import { AlertsModule } from './alerts/alerts.module.js';
+import { RealtimeModule } from './realtime/realtime.module.js';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { AlertsModule } from './alerts/alerts.module.js';
       useFactory: (config: ConfigService<Env, true>) =>
         createDataSourceOptions(config.get('DATABASE_URL', { infer: true })),
     }),
+    RealtimeModule,
     UsersModule,
     AuthModule,
     ProjectsModule,

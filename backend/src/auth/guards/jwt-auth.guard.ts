@@ -36,11 +36,19 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException();
     }
 
+    let payload: JwtPayload;
+
     try {
-      request.user = await this.jwtService.verifyAsync<JwtPayload>(token);
+      payload = await this.jwtService.verifyAsync<JwtPayload>(token);
     } catch {
       throw new UnauthorizedException();
     }
+
+    if (payload.type === 'stream') {
+      throw new UnauthorizedException();
+    }
+
+    request.user = payload;
 
     return true;
   }

@@ -11,6 +11,8 @@ import { LoginDto } from './dto/login.dto.js';
 import { RegisterDto } from './dto/register.dto.js';
 import type { JwtPayload } from './jwt-payload.js';
 
+const STREAM_TOKEN_TTL_SECONDS = 60;
+
 export interface AuthResponse {
   accessToken: string;
   user: User;
@@ -62,9 +64,26 @@ export class AuthService {
   }
 
   private async createAuthResponse(user: User): Promise<AuthResponse> {
-    const payload: JwtPayload = { sub: user.id, email: user.email };
+    const payload: JwtPayload = {
+      sub: user.id,
+      email: user.email,
+      type: 'access',
+    };
     const accessToken = await this.jwtService.signAsync(payload);
 
     return { accessToken, user };
+  }
+
+  async createStreamToken(user: JwtPayload): Promise<{ token: string }> {
+    const payload: JwtPayload = {
+      sub: user.sub,
+      email: user.email,
+      type: 'stream',
+    };
+    const token = await this.jwtService.signAsync(payload, {
+      expiresIn: STREAM_TOKEN_TTL_SECONDS,
+    });
+
+    return { token };
   }
 }

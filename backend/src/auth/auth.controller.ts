@@ -34,4 +34,10 @@ export class AuthController {
   me(@CurrentUser() user: JwtPayload) {
     return this.authService.getProfile(user.sub);
   }
+
+  @Post('stream-token')
+  @HttpCode(HttpStatus.OK)
+  streamToken(@CurrentUser() user: JwtPayload) {
+    return this.authService.createStreamToken(user);
+  }
 }
