@@ -55,11 +55,11 @@ function describeIncident(incident: Incident): string {
   ].join('\n');
 }
 
-export function buildAnalysisPrompt({
+export function buildEvidenceBlock({
   incident,
   timeline,
   evidence,
-}: AnalysisInput): AnalysisPrompt {
+}: AnalysisInput): string {
   const timelineLines = timeline
     .slice(0, MAX_TIMELINE_ENTRIES)
     .map(
@@ -106,7 +106,7 @@ export function buildAnalysisPrompt({
         `${truncate(log.message)}${log.traceId ? ` (trace ${log.traceId})` : ''}`,
     );
 
-  const user = [
+  return [
     '<evidence>',
     describeIncident(incident),
     section('Timeline', timelineLines),
@@ -116,6 +116,8 @@ export function buildAnalysisPrompt({
     section('Logs', logLines),
     '</evidence>',
   ].join('\n\n');
+}
 
-  return { system: SYSTEM_INSTRUCTION, user };
+export function buildAnalysisPrompt(input: AnalysisInput): AnalysisPrompt {
+  return { system: SYSTEM_INSTRUCTION, user: buildEvidenceBlock(input) };
 }

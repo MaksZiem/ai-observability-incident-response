@@ -4,6 +4,7 @@ import { User } from '../users/entities/user.entity.js';
 import { Project } from '../projects/entities/project.entity.js';
 import { Log } from '../logs/entities/log.entity.js';
 import { IncidentAnalysis } from '../analysis/entities/incident-analysis.entity.js';
+import { IncidentChatMessage } from '../analysis/entities/incident-chat-message.entity.js';
 import { Deployment } from '../deployments/entities/deployment.entity.js';
 import { ErrorEvent } from '../errors/entities/error-event.entity.js';
 import { ErrorGroup } from '../errors/entities/error-group.entity.js';
@@ -28,6 +29,7 @@ export function createDataSourceOptions(url: string): DataSourceOptions {
       IncidentNote,
       IncidentLink,
       IncidentAnalysis,
+      IncidentChatMessage,
     ],
     migrations: [join(import.meta.dirname, 'migrations', '*.js')],
     synchronize: false,
