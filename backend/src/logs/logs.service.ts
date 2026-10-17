@@ -15,6 +15,11 @@ import {
   MoreThanOrEqual,
   Repository,
 } from 'typeorm';
+import {
+  redactAttributes,
+  redactOptional,
+  redactString,
+} from '../common/redaction.js';
 import { CreateLogDto } from './dto/create-log.dto.js';
 import { ListLogsQueryDto } from './dto/list-logs-query.dto.js';
 import { ProjectEventType } from '../realtime/project-event.js';
@@ -40,6 +45,9 @@ export class LogsService {
     const logs = dtos.map((dto) =>
       this.logsRepository.create({
         ...dto,
+        message: redactString(dto.message),
+        endpoint: redactOptional(dto.endpoint),
+        attributes: redactAttributes(dto.attributes),
         projectId,
         timestamp: dto.timestamp ? new Date(dto.timestamp) : receivedAt,
       }),

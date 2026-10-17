@@ -1,7 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ApiThrottlerGuard } from './common/api-throttler.guard.js';
 import { validateEnv, type Env } from './config/env.js';
 import { createDataSourceOptions } from './database/database.options.js';
 import { UsersModule } from './users/users.module.js';
@@ -25,6 +28,7 @@ import { RealtimeModule } from './realtime/realtime.module.js';
       validate: validateEnv,
     }),
     ScheduleModule.forRoot(),
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 300 }]),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService<Env, true>) =>
@@ -44,5 +48,6 @@ import { RealtimeModule } from './realtime/realtime.module.js';
     AlertsModule,
     IngestModule,
   ],
+  providers: [{ provide: APP_GUARD, useClass: ApiThrottlerGuard }],
 })
 export class AppModule {}

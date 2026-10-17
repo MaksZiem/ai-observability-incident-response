@@ -10,6 +10,7 @@ import {
   MoreThanOrEqual,
   Repository,
 } from 'typeorm';
+import { redactAttributes, redactString } from '../common/redaction.js';
 import { CreateSpanDto } from './dto/create-span.dto.js';
 import { ListTracesQueryDto } from './dto/list-traces-query.dto.js';
 import { ProjectEventType } from '../realtime/project-event.js';
@@ -28,6 +29,8 @@ export class TracesService {
     const spans = dtos.map((dto) =>
       this.spansRepository.create({
         ...dto,
+        name: redactString(dto.name),
+        attributes: redactAttributes(dto.attributes),
         projectId,
         kind:
           dto.kind ?? (dto.parentSpanId ? SpanKind.INTERNAL : SpanKind.SERVER),

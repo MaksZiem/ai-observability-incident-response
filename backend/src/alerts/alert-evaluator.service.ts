@@ -1,7 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import type { Env } from '../config/env.js';
 import { IncidentsService } from '../incidents/incidents.service.js';
 import { MetricsService } from '../metrics/metrics.service.js';
 import { ProjectEventType } from '../realtime/project-event.js';
@@ -14,6 +16,7 @@ import {
   nextTransition,
 } from './alert-evaluation.js';
 import { AlertRule, AlertStatus } from './entities/alert-rule.entity.js';
+import { assertPublicHost } from './webhook-target.js';
 
 const EVALUATION_INTERVAL_MS = 60_000;
 const WEBHOOK_TIMEOUT_MS = 5_000;
@@ -24,6 +27,7 @@ type WebhookStatus = 'firing' | 'resolved';
 export class AlertEvaluatorService {
   private readonly logger = new Logger(AlertEvaluatorService.name);
   private running = false;
+  private readonly allowPrivateWebhooks: boolean;
 
   constructor(
     @InjectRepository(AlertRule)
@@ -31,7 +35,12 @@ export class AlertEvaluatorService {
     private readonly metricsService: MetricsService,
     private readonly incidentsService: IncidentsService,
     private readonly realtimeService: RealtimeService,
-  ) {}
+    config: ConfigService<Env, true>,
+  ) {
+    this.allowPrivateWebhooks = config.get('ALLOW_PRIVATE_WEBHOOKS', {
+      infer: true,
+    });
+  }
 
   @Interval(EVALUATION_INTERVAL_MS)
   async evaluateAll(): Promise<void> {
@@ -119,6 +128,10 @@ export class AlertEvaluatorService {
     }
 
     try {
+      if (!this.allowPrivateWebhooks) {
+        await assertPublicHost(rule.webhookUrl);
+      }
+
       const response = await fetch(rule.webhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -135,6 +148,7 @@ export class AlertEvaluatorService {
           incidentId,
           at,
         }),
+        redirect: 'manual',
         signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
       });
 

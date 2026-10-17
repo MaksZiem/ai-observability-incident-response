@@ -10,6 +10,7 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(32),
   JWT_EXPIRES_IN_SECONDS: z.coerce.number().int().positive().default(3600),
   GEMINI_API_KEY: z.string().min(1),
+  ALLOW_PRIVATE_WEBHOOKS: z.stringbool().default(false),
   GEMINI_MODEL: z.string().min(1).default('gemini-3.8-flash'),
 });
 

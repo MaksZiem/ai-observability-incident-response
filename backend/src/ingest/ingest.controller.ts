@@ -6,6 +6,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { Public } from '../auth/decorators/public.decorator.js';
 import { DeploymentsService } from '../deployments/deployments.service.js';
 import { CreateDeploymentDto } from '../deployments/dto/create-deployment.dto.js';
@@ -20,6 +21,7 @@ import { TracesService } from '../traces/traces.service.js';
 import { IngestSpansDto } from './dto/ingest-spans.dto.js';
 
 @Public()
+@Throttle({ default: { limit: 1200, ttl: 60_000 } })
 @UseGuards(ApiKeyGuard)
 @Controller('ingest')
 export class IngestController {

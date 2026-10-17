@@ -10,6 +10,11 @@ import {
   MoreThan,
   Repository,
 } from 'typeorm';
+import {
+  redactAttributes,
+  redactOptional,
+  redactString,
+} from '../common/redaction.js';
 import { CreateErrorEventDto } from './dto/create-error-event.dto.js';
 import { ListErrorEventsQueryDto } from './dto/list-error-events-query.dto.js';
 import { ListErrorGroupsQueryDto } from './dto/list-error-groups-query.dto.js';
@@ -40,7 +45,14 @@ export class ErrorsService {
     const receivedAt = new Date();
     const batches = new Map<string, PreparedEvent[]>();
 
-    for (const dto of dtos) {
+    for (const raw of dtos) {
+      const dto = {
+        ...raw,
+        message: redactString(raw.message),
+        stackTrace: redactOptional(raw.stackTrace),
+        endpoint: redactOptional(raw.endpoint),
+        attributes: redactAttributes(raw.attributes),
+      };
       const fingerprint = computeFingerprint(dto);
       const timestamp = dto.timestamp ? new Date(dto.timestamp) : receivedAt;
       const batch = batches.get(fingerprint) ?? [];
