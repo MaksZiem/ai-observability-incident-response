@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import type { Env } from '../config/env.js';
 import { IncidentsService } from '../incidents/incidents.service.js';
 import { MetricsService } from '../metrics/metrics.service.js';
+import { PlatformStatsService } from '../platform/platform-stats.service.js';
 import { ProjectEventType } from '../realtime/project-event.js';
 import { RealtimeService } from '../realtime/realtime.service.js';
 import {
@@ -35,6 +36,7 @@ export class AlertEvaluatorService {
     private readonly metricsService: MetricsService,
     private readonly incidentsService: IncidentsService,
     private readonly realtimeService: RealtimeService,
+    private readonly platformStats: PlatformStatsService,
     config: ConfigService<Env, true>,
   ) {
     this.allowPrivateWebhooks = config.get('ALLOW_PRIVATE_WEBHOOKS', {
@@ -49,15 +51,19 @@ export class AlertEvaluatorService {
     }
 
     this.running = true;
+    let failed = 0;
 
     try {
       const rules = await this.rulesRepository.findBy({ enabled: true });
 
       for (const rule of rules) {
-        await this.evaluate(rule).catch((error: unknown) =>
-          this.logger.error(`Alert rule ${rule.id} evaluation failed`, error),
-        );
+        await this.evaluate(rule).catch((error: unknown) => {
+          failed += 1;
+          this.logger.error(`Alert rule ${rule.id} evaluation failed`, error);
+        });
       }
+
+      this.platformStats.recordAlertRun(failed);
     } finally {
       this.running = false;
     }
@@ -152,12 +158,15 @@ export class AlertEvaluatorService {
         signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
       });
 
+      this.platformStats.recordOutcome('webhooks', response.ok);
+
       if (!response.ok) {
         this.logger.warn(
           `Webhook for alert rule ${rule.id} returned ${response.status}`,
         );
       }
     } catch (error) {
+      this.platformStats.recordOutcome('webhooks', false);
       const message = error instanceof Error ? error.message : String(error);
       this.logger.warn(`Webhook for alert rule ${rule.id} failed: ${message}`);
     }

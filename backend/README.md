@@ -1,114 +1,85 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Backend — AI Observability & Incident Response
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+NestJS + TypeORM + PostgreSQL. Zbiera logi, spany, błędy i deploymenty, liczy metryki, prowadzi incydenty i analizuje je przez Gemini.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Uruchomienie
 
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
+Wymagania: Node 24, PostgreSQL.
 
 ```bash
-$ npm install
+psql -d postgres -c "CREATE ROLE observability WITH LOGIN PASSWORD 'observability';"
+psql -d postgres -c "CREATE DATABASE ai_observability OWNER observability;"
+psql -d postgres -c "CREATE DATABASE ai_observability_test OWNER observability;"
+
+cp .env.example .env
+npm install
+npm run migration:run
+npm run start:dev
 ```
 
-## Compile and run the project
+API działa pod `http://localhost:3001/api`, health check pod `/api/health`.
+
+## Zmienne środowiskowe
+
+| Zmienna | Opis |
+|---|---|
+| `DATABASE_URL` | baza aplikacji |
+| `JWT_SECRET` | min. 32 znaki, np. `openssl rand -base64 48` |
+| `JWT_EXPIRES_IN_SECONDS` | ważność tokena dostępu (domyślnie 3600) |
+| `GEMINI_API_KEY` | klucz z aistudio.google.com |
+| `GEMINI_MODEL` | domyślnie `gemini-3.8-flash` |
+| `ALLOW_PRIVATE_WEBHOOKS` | `true` tylko lokalnie — pozwala na webhooki do `localhost` |
+| `FRONTEND_URL` | origin dopuszczony przez CORS |
+| `TEST_DATABASE_URL` | opcjonalnie; domyślnie `DATABASE_URL` z sufiksem `_test` |
+
+## Skrypty
+
+| Skrypt | Co robi |
+|---|---|
+| `npm run start:dev` | serwer z przeładowaniem |
+| `npm test` | testy jednostkowe |
+| `npm run test:e2e` | build, migracje bazy testowej i test pełnego przepływu (AI zastąpione atrapą) |
+| `npm run demo` | wypełnia działający backend danymi demo (patrz niżej) |
+| `npm run migration:generate -- src/database/migrations/Nazwa` | nowa migracja z encji |
+| `npm run migration:run` | wykonanie migracji |
+| `npm run lint` / `npm run format` | oxlint / Prettier |
+
+## Dane demo
+
+Przy działającym backendzie:
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm run demo
 ```
 
-## Run tests
+Tworzy użytkownika `demo@example.com` / `demo-password` i od nowa projekt „My E-commerce API” z 3 godzinami ruchu:
+deploy `v1.42.3` (zmniejszenie puli połączeń do 5) → po 4 minutach wzrost latency i błędów `DatabaseConnectionTimeout`
+→ alert tworzy incydent z podpiętymi dowodami. Do tego dwa historyczne, rozwiązane incydenty do wyszukiwania podobnych.
+Adres API można zmienić przez `DEMO_API_URL`.
 
-```bash
-# unit tests
-$ npm run test
+## API
 
-# e2e tests
-$ npm run test:e2e
+Wszystkie ścieżki mają prefiks `/api`.
 
-# test coverage
-$ npm run test:cov
-```
+| Obszar | Endpointy | Uwierzytelnienie |
+|---|---|---|
+| Konto | `POST /auth/register`, `POST /auth/login`, `GET /auth/me`, `POST /auth/change-password`, `PATCH /users/me` | JWT (`Authorization: Bearer`) |
+| Projekty | `/projects`, `POST /projects/:id/api-key/rotate` | JWT |
+| Ingest | `POST /ingest/logs`, `/ingest/spans`, `/ingest/errors`, `/ingest/deployments` | `X-Api-Key` |
+| Logi | `GET /projects/:id/logs` (filtry, kursor), `/logs/:logId` | JWT |
+| Trace'y | `GET /projects/:id/traces`, `/traces/:traceId` | JWT |
+| Błędy | `GET /projects/:id/errors`, `/errors/:groupId/events`, `PATCH /errors/:groupId` | JWT |
+| Deploymenty | `GET`/`POST /projects/:id/deployments` | JWT |
+| Metryki | `GET /projects/:id/metrics/overview?range=`, `/metrics/services` | JWT |
+| Incydenty | `/projects/:id/incidents` + `/notes`, `/links`, `/timeline`, `/evidence`, `/similar` | JWT |
+| AI | `/incidents/:incidentId/analyses`, `/incidents/:incidentId/chat` | JWT |
+| Alerty | `/projects/:id/alerts`, `POST /alerts/:ruleId/evaluate` | JWT |
+| Real-time | `POST /auth/stream-token`, potem SSE `GET /projects/:id/stream?token=` | token strumienia |
+| Platforma | `GET /health` (publiczny), `GET /platform/stats` | — / JWT |
 
-## Deployment
+## Znane ograniczenia
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Observability
-
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
-
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
-
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observer](https://observer.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- Ingest zapisuje synchronicznie, bez kolejki — restart w trakcie analizy AI zostawia ją w stanie `pending`.
+- Scheduler alertów, liczniki rate limitingu, szyna zdarzeń SSE i statystyki platformy żyją w pamięci jednego procesu; przy wielu instancjach trzeba je przenieść do Redisa.
+- Projekt ma jednego właściciela — brak członków zespołu, ról i przypisywania incydentów.
+- `/platform/stats` pokazuje statystyki całej platformy każdemu zalogowanemu użytkownikowi; w produkcji powinien być tylko dla administratorów.

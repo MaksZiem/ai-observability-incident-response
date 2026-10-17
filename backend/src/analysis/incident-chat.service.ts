@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { IncidentEvidenceService } from '../incidents/incident-evidence.service.js';
 import { IncidentsService } from '../incidents/incidents.service.js';
 import { SimilarIncidentsService } from '../incidents/similar-incidents.service.js';
+import { PlatformStatsService } from '../platform/platform-stats.service.js';
 import { AnalysisModel, ChatModelOutput } from './analysis-model.js';
 import { buildEvidenceBlock } from './analysis-prompt.js';
 import { buildChatPrompt } from './chat-prompt.js';
@@ -30,6 +31,7 @@ export class IncidentChatService {
     private readonly evidenceService: IncidentEvidenceService,
     private readonly similarService: SimilarIncidentsService,
     private readonly analysisModel: AnalysisModel,
+    private readonly platformStats: PlatformStatsService,
   ) {}
 
   async findMessages(
@@ -81,6 +83,7 @@ export class IncidentChatService {
         }),
       );
     } catch (error) {
+      this.platformStats.recordOutcome('chat', false);
       const message = error instanceof Error ? error.message : String(error);
       this.logger.warn(
         `Chat answer for incident ${incident.id} failed: ${message}`,
@@ -89,6 +92,8 @@ export class IncidentChatService {
         'The AI assistant is unavailable, try again later',
       );
     }
+
+    this.platformStats.recordOutcome('chat', true);
 
     return this.messagesRepository.save([
       this.messagesRepository.create({

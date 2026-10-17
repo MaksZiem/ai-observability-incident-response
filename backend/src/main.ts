@@ -1,26 +1,17 @@
-import { NestFactory, Reflector } from '@nestjs/core';
+import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
-import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
-import { AppModule } from './app.module.js';
-import type { Env } from './config/env.js';
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import { AppModule } from './app.module.js';
+import { configureApp } from './app.setup.js';
+import type { Env } from './config/env.js';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const config = app.get<ConfigService<Env, true>>(ConfigService);
 
-  app.useBodyParser('json', { limit: '5mb' });
-  app.setGlobalPrefix('api');
+  configureApp(app);
   app.enableCors({ origin: config.get('FRONTEND_URL', { infer: true }) });
   app.enableShutdownHooks();
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
-  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
   await app.listen(config.get('PORT', { infer: true }));
 }

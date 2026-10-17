@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import type { Incident } from '../incidents/entities/incident.entity.js';
 import { IncidentEvidenceService } from '../incidents/incident-evidence.service.js';
 import { IncidentsService } from '../incidents/incidents.service.js';
+import { PlatformStatsService } from '../platform/platform-stats.service.js';
 import { ProjectEventType } from '../realtime/project-event.js';
 import { RealtimeService } from '../realtime/realtime.service.js';
 import { SimilarIncidentsService } from '../incidents/similar-incidents.service.js';
@@ -26,6 +27,7 @@ export class AnalysisService {
     private readonly similarService: SimilarIncidentsService,
     private readonly analysisModel: AnalysisModel,
     private readonly realtimeService: RealtimeService,
+    private readonly platformStats: PlatformStatsService,
   ) {}
 
   async request(
@@ -117,6 +119,10 @@ export class AnalysisService {
       });
     }
 
+    this.platformStats.recordOutcome(
+      'analyses',
+      status === AnalysisStatus.COMPLETED,
+    );
     this.realtimeService.publish(
       projectId,
       ProjectEventType.ANALYSIS_FINISHED,

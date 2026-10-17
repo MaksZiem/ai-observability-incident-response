@@ -20,6 +20,8 @@ import { IncidentsModule } from './incidents/incidents.module.js';
 import { AnalysisModule } from './analysis/analysis.module.js';
 import { AlertsModule } from './alerts/alerts.module.js';
 import { RealtimeModule } from './realtime/realtime.module.js';
+import { PlatformModule } from './platform/platform.module.js';
+import { HealthModule } from './health/health.module.js';
 
 @Module({
   imports: [
@@ -35,6 +37,8 @@ import { RealtimeModule } from './realtime/realtime.module.js';
         createDataSourceOptions(config.get('DATABASE_URL', { infer: true })),
     }),
     RealtimeModule,
+    PlatformModule,
+    HealthModule,
     UsersModule,
     AuthModule,
     ProjectsModule,

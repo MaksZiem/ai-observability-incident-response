@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   UnauthorizedException,
@@ -7,6 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { User } from '../users/entities/user.entity.js';
 import { UsersService } from '../users/users.service.js';
+import { ChangePasswordDto } from './dto/change-password.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import { RegisterDto } from './dto/register.dto.js';
 import type { JwtPayload } from './jwt-payload.js';
@@ -61,6 +63,23 @@ export class AuthService {
     }
 
     return user;
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
+    const user = await this.usersService.findByIdWithPassword(userId);
+
+    if (!user) {
+      throw new UnauthorizedException();
+    }
+
+    if (!(await argon2.verify(user.passwordHash, dto.currentPassword))) {
+      throw new BadRequestException('Current password is incorrect');
+    }
+
+    await this.usersService.updatePasswordHash(
+      userId,
+      await argon2.hash(dto.newPassword),
+    );
   }
 
   private async createAuthResponse(user: User): Promise<AuthResponse> {
