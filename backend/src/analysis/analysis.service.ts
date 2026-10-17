@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import type { Incident } from '../incidents/entities/incident.entity.js';
 import { IncidentEvidenceService } from '../incidents/incident-evidence.service.js';
 import { IncidentsService } from '../incidents/incidents.service.js';
+import { SimilarIncidentsService } from '../incidents/similar-incidents.service.js';
 import { AnalysisModel } from './analysis-model.js';
 import { buildAnalysisPrompt } from './analysis-prompt.js';
 import {
@@ -20,6 +21,7 @@ export class AnalysisService {
     private readonly analysesRepository: Repository<IncidentAnalysis>,
     private readonly incidentsService: IncidentsService,
     private readonly evidenceService: IncidentEvidenceService,
+    private readonly similarService: SimilarIncidentsService,
     private readonly analysisModel: AnalysisModel,
   ) {}
 
@@ -80,13 +82,14 @@ export class AnalysisService {
     analysisId: string,
   ): Promise<void> {
     try {
-      const [timeline, evidence] = await Promise.all([
+      const [timeline, evidence, similar] = await Promise.all([
         this.evidenceService.getTimeline(projectId, incident.id),
         this.evidenceService.getEvidence(projectId, incident.id),
+        this.similarService.findSimilar(projectId, incident.id),
       ]);
 
       const output = await this.analysisModel.analyze(
-        buildAnalysisPrompt({ incident, timeline, evidence }),
+        buildAnalysisPrompt({ incident, timeline, evidence, similar }),
       );
 
       await this.analysesRepository.update(analysisId, {

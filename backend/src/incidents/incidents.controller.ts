@@ -21,12 +21,14 @@ import { ListIncidentsQueryDto } from './dto/list-incidents-query.dto.js';
 import { UpdateIncidentDto } from './dto/update-incident.dto.js';
 import { IncidentEvidenceService } from './incident-evidence.service.js';
 import { IncidentsService } from './incidents.service.js';
+import { SimilarIncidentsService } from './similar-incidents.service.js';
 
 @Controller('projects/:projectId/incidents')
 export class IncidentsController {
   constructor(
     private readonly incidentsService: IncidentsService,
     private readonly evidenceService: IncidentEvidenceService,
+    private readonly similarService: SimilarIncidentsService,
     private readonly projectsService: ProjectsService,
   ) {}
 
@@ -89,6 +91,16 @@ export class IncidentsController {
   ) {
     await this.projectsService.findOne(projectId, user.sub);
     return this.evidenceService.getTimeline(projectId, id);
+  }
+
+  @Get(':id/similar')
+  async findSimilar(
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    await this.projectsService.findOne(projectId, user.sub);
+    return this.similarService.findSimilar(projectId, id);
   }
 
   @Get(':id/notes')

@@ -1,6 +1,7 @@
 import type { IncidentEvidence } from '../incidents/incident-evidence.service.js';
 import type { TimelineEntry } from '../incidents/incident-timeline.js';
 import type { Incident } from '../incidents/entities/incident.entity.js';
+import type { SimilarIncident } from '../incidents/similar-incidents.service.js';
 
 const MAX_TEXT_LENGTH = 500;
 const MAX_TIMELINE_ENTRIES = 50;
@@ -17,6 +18,7 @@ export interface AnalysisInput {
   incident: Incident;
   timeline: TimelineEntry[];
   evidence: IncidentEvidence;
+  similar: SimilarIncident[];
 }
 
 const SYSTEM_INSTRUCTION = [
@@ -59,6 +61,7 @@ export function buildEvidenceBlock({
   incident,
   timeline,
   evidence,
+  similar,
 }: AnalysisInput): string {
   const timelineLines = timeline
     .slice(0, MAX_TIMELINE_ENTRIES)
@@ -106,6 +109,13 @@ export function buildEvidenceBlock({
         `${truncate(log.message)}${log.traceId ? ` (trace ${log.traceId})` : ''}`,
     );
 
+  const similarLines = similar.map(
+    ({ incident: past, score, reasons }) =>
+      `- #${past.number} ${truncate(past.title)} (${past.status}, ` +
+      `started ${iso(past.startedAt)}, similarity ${score}): ${reasons.join('; ')}` +
+      `${past.description ? `. Description: ${truncate(past.description)}` : ''}`,
+  );
+
   return [
     '<evidence>',
     describeIncident(incident),
@@ -114,6 +124,7 @@ export function buildEvidenceBlock({
     section('Traces (slowest spans first)', traceLines),
     section('Deployments', deploymentLines),
     section('Logs', logLines),
+    section('Similar past incidents', similarLines),
     '</evidence>',
   ].join('\n\n');
 }

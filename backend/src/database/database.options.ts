@@ -3,6 +3,7 @@ import type { DataSourceOptions } from 'typeorm';
 import { User } from '../users/entities/user.entity.js';
 import { Project } from '../projects/entities/project.entity.js';
 import { Log } from '../logs/entities/log.entity.js';
+import { AlertRule } from '../alerts/entities/alert-rule.entity.js';
 import { IncidentAnalysis } from '../analysis/entities/incident-analysis.entity.js';
 import { IncidentChatMessage } from '../analysis/entities/incident-chat-message.entity.js';
 import { Deployment } from '../deployments/entities/deployment.entity.js';
@@ -30,6 +31,7 @@ export function createDataSourceOptions(url: string): DataSourceOptions {
       IncidentLink,
       IncidentAnalysis,
       IncidentChatMessage,
+      AlertRule,
     ],
     migrations: [join(import.meta.dirname, 'migrations', '*.js')],
     synchronize: false,

@@ -45,19 +45,32 @@ export class MetricsService {
   ): Promise<Overview> {
     const range = resolveTimeRange(query.range);
 
-    const summary = await this.requestsQuery(
-      projectId,
-      range,
-      query.service,
-    ).getRawOne<RawRequestStats>();
+    const [summary, series] = await Promise.all([
+      this.getStats(projectId, range, query.service),
+      this.getSeries(projectId, range, query.service),
+    ]);
 
     return {
       from: range.from,
       to: range.to,
       stepMs: range.stepMs,
-      summary: toRequestStats(summary),
-      series: await this.getSeries(projectId, range, query.service),
+      summary,
+      series,
     };
+  }
+
+  async getStats(
+    projectId: string,
+    range: ResolvedTimeRange,
+    service?: string,
+  ): Promise<RequestStats> {
+    const raw = await this.requestsQuery(
+      projectId,
+      range,
+      service,
+    ).getRawOne<RawRequestStats>();
+
+    return toRequestStats(raw);
   }
 
   async getSeries(

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { validateEnv, type Env } from './config/env.js';
 import { createDataSourceOptions } from './database/database.options.js';
@@ -14,6 +15,7 @@ import { DeploymentsModule } from './deployments/deployments.module.js';
 import { MetricsModule } from './metrics/metrics.module.js';
 import { IncidentsModule } from './incidents/incidents.module.js';
 import { AnalysisModule } from './analysis/analysis.module.js';
+import { AlertsModule } from './alerts/alerts.module.js';
 
 @Module({
   imports: [
@@ -21,6 +23,7 @@ import { AnalysisModule } from './analysis/analysis.module.js';
       isGlobal: true,
       validate: validateEnv,
     }),
+    ScheduleModule.forRoot(),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService<Env, true>) =>
@@ -36,6 +39,7 @@ import { AnalysisModule } from './analysis/analysis.module.js';
     MetricsModule,
     IncidentsModule,
     AnalysisModule,
+    AlertsModule,
     IngestModule,
   ],
 })

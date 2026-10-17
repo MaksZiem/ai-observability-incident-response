@@ -12,6 +12,7 @@ import { Incident } from './entities/incident.entity.js';
 import { IncidentEvidenceService } from './incident-evidence.service.js';
 import { IncidentsController } from './incidents.controller.js';
 import { IncidentsService } from './incidents.service.js';
+import { SimilarIncidentsService } from './similar-incidents.service.js';
 
 @Module({
   imports: [
@@ -24,7 +25,11 @@ import { IncidentsService } from './incidents.service.js';
     MetricsModule,
   ],
   controllers: [IncidentsController],
-  providers: [IncidentsService, IncidentEvidenceService],
-  exports: [IncidentsService, IncidentEvidenceService],
+  providers: [
+    IncidentsService,
+    IncidentEvidenceService,
+    SimilarIncidentsService,
+  ],
+  exports: [IncidentsService, IncidentEvidenceService, SimilarIncidentsService],
 })
 export class IncidentsModule {}

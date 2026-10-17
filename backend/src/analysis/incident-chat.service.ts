@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { IncidentEvidenceService } from '../incidents/incident-evidence.service.js';
 import { IncidentsService } from '../incidents/incidents.service.js';
+import { SimilarIncidentsService } from '../incidents/similar-incidents.service.js';
 import { AnalysisModel, ChatModelOutput } from './analysis-model.js';
 import { buildEvidenceBlock } from './analysis-prompt.js';
 import { buildChatPrompt } from './chat-prompt.js';
@@ -27,6 +28,7 @@ export class IncidentChatService {
     private readonly messagesRepository: Repository<IncidentChatMessage>,
     private readonly incidentsService: IncidentsService,
     private readonly evidenceService: IncidentEvidenceService,
+    private readonly similarService: SimilarIncidentsService,
     private readonly analysisModel: AnalysisModel,
   ) {}
 
@@ -52,9 +54,10 @@ export class IncidentChatService {
     const incident = await this.incidentsService.findOne(projectId, incidentId);
     const askedAt = new Date();
 
-    const [timeline, evidence, recent] = await Promise.all([
+    const [timeline, evidence, similar, recent] = await Promise.all([
       this.evidenceService.getTimeline(projectId, incident.id),
       this.evidenceService.getEvidence(projectId, incident.id),
+      this.similarService.findSimilar(projectId, incident.id),
       this.messagesRepository.find({
         where: { incidentId: incident.id },
         order: { createdAt: 'DESC' },
@@ -67,7 +70,12 @@ export class IncidentChatService {
     try {
       output = await this.analysisModel.answer(
         buildChatPrompt({
-          evidence: buildEvidenceBlock({ incident, timeline, evidence }),
+          evidence: buildEvidenceBlock({
+            incident,
+            timeline,
+            evidence,
+            similar,
+          }),
           history: recent.reverse(),
           question: dto.message,
         }),
