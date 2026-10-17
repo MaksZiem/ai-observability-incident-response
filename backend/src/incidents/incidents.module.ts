@@ -25,6 +25,6 @@ import { IncidentsService } from './incidents.service.js';
   ],
   controllers: [IncidentsController],
   providers: [IncidentsService, IncidentEvidenceService],
-  exports: [IncidentsService],
+  exports: [IncidentsService, IncidentEvidenceService],
 })
 export class IncidentsModule {}

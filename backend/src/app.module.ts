@@ -13,6 +13,7 @@ import { ErrorsModule } from './errors/errors.module.js';
 import { DeploymentsModule } from './deployments/deployments.module.js';
 import { MetricsModule } from './metrics/metrics.module.js';
 import { IncidentsModule } from './incidents/incidents.module.js';
+import { AnalysisModule } from './analysis/analysis.module.js';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { IncidentsModule } from './incidents/incidents.module.js';
     DeploymentsModule,
     MetricsModule,
     IncidentsModule,
+    AnalysisModule,
     IngestModule,
   ],
 })
