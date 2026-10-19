@@ -1,7 +1,7 @@
 import { apiFetch } from "@/lib/api";
 import type { LogLevel, LogPage } from "@/features/logs/types";
 
-type LogsFilter = {
+export type LogsFilter = {
   from?: string;
   to?: string;
   service?: string;

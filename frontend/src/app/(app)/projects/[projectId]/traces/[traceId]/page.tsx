@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { buttonClasses } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { formatDayTime, formatLatency } from "@/lib/format";
 import { decodeParam } from "@/lib/url";
+import { logsHref } from "@/features/logs/filters";
 import { listLogs } from "@/features/logs/queries";
 import { getProject } from "@/features/projects/queries";
 import { SpanStatusBadge } from "@/features/traces/components/span-status-badge";
@@ -41,7 +44,17 @@ export default async function TracePage({
           <span className="font-mono">{trace.rootSpan?.name ?? traceId}</span>
         }
         description={summary}
-        actions={<SpanStatusBadge status={trace.hasError ? "error" : "ok"} />}
+        actions={
+          <>
+            <SpanStatusBadge status={trace.hasError ? "error" : "ok"} />
+            <Link
+              href={logsHref(projectId, { traceId })}
+              className={buttonClasses("secondary")}
+            >
+              View logs
+            </Link>
+          </>
+        }
       />
       <p className="border-b border-border px-6 py-2 font-mono text-xs text-fg-muted">
         Trace {trace.traceId}

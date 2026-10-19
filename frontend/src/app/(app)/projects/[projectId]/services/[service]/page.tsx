@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Activity } from "lucide-react";
+import { buttonClasses } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { decodeParam } from "@/lib/url";
 import { DeploymentList } from "@/features/deployments/components/deployment-list";
 import { listDeployments } from "@/features/deployments/queries";
+import { logsHref } from "@/features/logs/filters";
 import { RequestCharts } from "@/features/metrics/components/request-charts";
 import { RequestStatsGrid } from "@/features/metrics/components/request-stats-grid";
 import { TimeRangePicker } from "@/features/metrics/components/time-range-picker";
@@ -57,6 +60,12 @@ export default async function ServicePage({
             {hasTraffic && (
               <ServiceStatusBadge status={getServiceStatus(overview.summary)} />
             )}
+            <Link
+              href={logsHref(projectId, { service })}
+              className={buttonClasses("secondary")}
+            >
+              View logs
+            </Link>
             <TimeRangePicker value={range} />
           </>
         }

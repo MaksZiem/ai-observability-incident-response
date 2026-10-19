@@ -38,3 +38,10 @@ export function formatAxisTime(iso: string, spansDays: boolean) {
     ? date.toLocaleDateString("en-GB", DAY)
     : date.toLocaleTimeString("en-GB", TIME);
 }
+
+export function formatClock(iso: string) {
+  return new Date(iso).toLocaleTimeString("en-GB", {
+    ...TIME,
+    second: "2-digit",
+  });
+}
