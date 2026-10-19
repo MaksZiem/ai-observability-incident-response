@@ -45,3 +45,14 @@ export function formatClock(iso: string) {
     second: "2-digit",
   });
 }
+
+export function formatDuration(ms: number) {
+  const minutes = Math.floor(ms / 60_000);
+  if (minutes < 1) return `${Math.max(Math.round(ms / 1000), 0)}s`;
+  if (minutes < 60) return `${minutes}m`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ${minutes % 60}m`;
+
+  return `${Math.floor(hours / 24)}d ${hours % 24}h`;
+}

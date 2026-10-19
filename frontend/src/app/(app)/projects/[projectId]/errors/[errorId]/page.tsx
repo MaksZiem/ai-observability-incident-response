@@ -7,6 +7,8 @@ import { ErrorEventList } from "@/features/errors/components/error-event-list";
 import { ErrorStatusBadge } from "@/features/errors/components/error-status-badge";
 import { ErrorStatusSelect } from "@/features/errors/components/error-status-select";
 import { getErrorGroup, listErrorEvents } from "@/features/errors/queries";
+import { AddToIncidentForm } from "@/features/incidents/components/add-to-incident-form";
+import { listIncidents } from "@/features/incidents/queries";
 import { getProject } from "@/features/projects/queries";
 import { servicePath } from "@/features/services/paths";
 
@@ -40,10 +42,14 @@ export default async function ErrorPage({
   const { projectId, errorId } = await params;
 
   await getProject(projectId);
-  const [group, events] = await Promise.all([
-    getErrorGroup(projectId, errorId),
-    listErrorEvents(projectId, errorId),
-  ]);
+  const [group, events, openIncidents, investigatingIncidents] =
+    await Promise.all([
+      getErrorGroup(projectId, errorId),
+      listErrorEvents(projectId, errorId),
+      listIncidents(projectId, "open"),
+      listIncidents(projectId, "investigating"),
+    ]);
+  const activeIncidents = [...openIncidents, ...investigatingIncidents];
 
   return (
     <div>
@@ -78,6 +84,16 @@ export default async function ErrorPage({
           <Detail label="First seen">{formatDayTime(group.firstSeen)}</Detail>
           <Detail label="Last seen">{formatDayTime(group.lastSeen)}</Detail>
         </dl>
+
+        <section className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-[18px]">
+          <h2 className="text-base font-semibold">Add to incident</h2>
+          <AddToIncidentForm
+            projectId={projectId}
+            kind="error_group"
+            targetId={group.id}
+            incidents={activeIncidents}
+          />
+        </section>
 
         <section className="rounded-xl border border-border bg-surface p-[18px]">
           <h2 className="mb-4 text-base font-semibold">Recent events</h2>
