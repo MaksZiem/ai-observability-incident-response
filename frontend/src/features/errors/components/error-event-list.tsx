@@ -3,6 +3,7 @@ import Link from "next/link";
 import { JsonBlock } from "@/components/ui/json-block";
 import { formatDayTime } from "@/lib/format";
 import type { ErrorEvent } from "@/features/errors/types";
+import { tracePath } from "@/features/traces/paths";
 
 type ErrorEventListProps = {
   projectId: string;
@@ -44,7 +45,7 @@ export function ErrorEventList({ projectId, events }: ErrorEventListProps) {
             {event.traceId && (
               <Field label="Trace">
                 <Link
-                  href={`/projects/${projectId}/traces/${event.traceId}`}
+                  href={tracePath(projectId, event.traceId)}
                   className="text-accent hover:underline"
                 >
                   {event.traceId}

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Activity } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
+import { decodeParam } from "@/lib/url";
 import { DeploymentList } from "@/features/deployments/components/deployment-list";
 import { listDeployments } from "@/features/deployments/queries";
 import { RequestCharts } from "@/features/metrics/components/request-charts";
@@ -12,7 +13,6 @@ import { getOverview } from "@/features/metrics/queries";
 import { parseTimeRange } from "@/features/metrics/time-range";
 import { getProject } from "@/features/projects/queries";
 import { ServiceStatusBadge } from "@/features/services/components/service-status-badge";
-import { decodeServiceParam } from "@/features/services/paths";
 
 const RECENT_DEPLOYMENTS = 5;
 
@@ -20,7 +20,7 @@ export async function generateMetadata({
   params,
 }: PageProps<"/projects/[projectId]/services/[service]">): Promise<Metadata> {
   const { service } = await params;
-  return { title: decodeServiceParam(service) };
+  return { title: decodeParam(service) };
 }
 
 export default async function ServicePage({
@@ -28,7 +28,7 @@ export default async function ServicePage({
   searchParams,
 }: PageProps<"/projects/[projectId]/services/[service]">) {
   const { projectId, service: serviceParam } = await params;
-  const service = decodeServiceParam(serviceParam);
+  const service = decodeParam(serviceParam);
   const range = parseTimeRange((await searchParams).range);
 
   await getProject(projectId);
