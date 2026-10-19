@@ -3,11 +3,11 @@ import { formatCount, formatLatency, formatPercent } from "@/lib/format";
 import { errorRateTone, latencyTone } from "@/features/metrics/health";
 import type { RequestStats } from "@/features/metrics/types";
 
-type OverviewStatsProps = {
+type RequestStatsGridProps = {
   summary: RequestStats;
 };
 
-export function OverviewStats({ summary }: OverviewStatsProps) {
+export function RequestStatsGrid({ summary }: RequestStatsGridProps) {
   return (
     <section className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
       <StatCard label="Requests" value={formatCount(summary.requests)} />

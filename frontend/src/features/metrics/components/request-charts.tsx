@@ -9,12 +9,12 @@ import {
 import type { Deployment } from "@/features/deployments/types";
 import type { Overview } from "@/features/metrics/types";
 
-type OverviewChartsProps = {
+type RequestChartsProps = {
   overview: Overview;
   deployments: Deployment[];
 };
 
-export function OverviewCharts({ overview, deployments }: OverviewChartsProps) {
+export function RequestCharts({ overview, deployments }: RequestChartsProps) {
   const { from, to, series, summary } = overview;
 
   const markers: ChartMarker[] = deployments.map((deployment) => ({

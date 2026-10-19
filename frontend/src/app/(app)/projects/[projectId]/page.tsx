@@ -3,11 +3,11 @@ import { Activity } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { listDeployments } from "@/features/deployments/queries";
+import { RequestCharts } from "@/features/metrics/components/request-charts";
+import { RequestStatsGrid } from "@/features/metrics/components/request-stats-grid";
 import { TimeRangePicker } from "@/features/metrics/components/time-range-picker";
 import { getOverview } from "@/features/metrics/queries";
 import { parseTimeRange } from "@/features/metrics/time-range";
-import { OverviewCharts } from "@/features/overview/components/overview-charts";
-import { OverviewStats } from "@/features/overview/components/overview-stats";
 import { EnvironmentBadge } from "@/features/projects/components/environment-badge";
 import { getProject } from "@/features/projects/queries";
 
@@ -51,8 +51,8 @@ export default async function OverviewPage({
           />
         ) : (
           <>
-            <OverviewStats summary={overview.summary} />
-            <OverviewCharts overview={overview} deployments={deployments} />
+            <RequestStatsGrid summary={overview.summary} />
+            <RequestCharts overview={overview} deployments={deployments} />
           </>
         )}
       </div>

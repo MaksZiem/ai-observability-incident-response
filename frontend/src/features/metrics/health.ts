@@ -1,4 +1,4 @@
-import type { RequestStats } from "@/features/metrics/types";
+import type { RequestStats, ServiceStatus } from "@/features/metrics/types";
 
 const DEGRADED_ERROR_RATE = 0.02;
 const CRITICAL_ERROR_RATE = 0.25;
@@ -12,4 +12,15 @@ export function errorRateTone({ errorRate }: RequestStats) {
 
 export function latencyTone({ p95LatencyMs }: RequestStats) {
   return (p95LatencyMs ?? 0) >= DEGRADED_P95_MS ? "warning" : "default";
+}
+
+export function getServiceStatus(stats: RequestStats): ServiceStatus {
+  if (stats.errorRate >= CRITICAL_ERROR_RATE) return "critical";
+  if (
+    stats.errorRate >= DEGRADED_ERROR_RATE ||
+    (stats.p95LatencyMs ?? 0) >= DEGRADED_P95_MS
+  ) {
+    return "degraded";
+  }
+  return "healthy";
 }
