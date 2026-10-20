@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { formatDayTime, formatDuration } from "@/lib/format";
+import { IncidentAnalysisPanel } from "@/features/analysis/components/incident-analysis-panel";
+import { IncidentChat } from "@/features/analysis/components/incident-chat";
+import { listAnalyses, listChatMessages } from "@/features/analysis/queries";
 import { AddNoteForm } from "@/features/incidents/components/add-note-form";
 import {
   IncidentSeverityBadge,
@@ -43,19 +46,28 @@ function Panel({ title, children }: PanelProps) {
   );
 }
 
+function readParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 export default async function IncidentPage({
   params,
+  searchParams,
 }: PageProps<"/projects/[projectId]/incidents/[incidentId]">) {
   const { projectId, incidentId } = await params;
+  const selectedAnalysisId = readParam((await searchParams).analysis);
 
   await getProject(projectId);
   const incident = await getIncident(projectId, incidentId);
-  const [timeline, evidence, links, similar] = await Promise.all([
-    getIncidentTimeline(projectId, incidentId),
-    getIncidentEvidence(projectId, incidentId),
-    listIncidentLinks(projectId, incidentId),
-    listSimilarIncidents(projectId, incidentId),
-  ]);
+  const [timeline, evidence, links, similar, analyses, messages] =
+    await Promise.all([
+      getIncidentTimeline(projectId, incidentId),
+      getIncidentEvidence(projectId, incidentId),
+      listIncidentLinks(projectId, incidentId),
+      listSimilarIncidents(projectId, incidentId),
+      listAnalyses(projectId, incidentId),
+      listChatMessages(projectId, incidentId),
+    ]);
 
   const end = incident.resolvedAt ? new Date(incident.resolvedAt) : new Date();
   const duration = end.getTime() - new Date(incident.startedAt).getTime();
@@ -86,6 +98,13 @@ export default async function IncidentPage({
 
       <div className="grid items-start gap-6 p-6 lg:grid-cols-[1fr_400px]">
         <div className="flex flex-col gap-6">
+          <IncidentAnalysisPanel
+            projectId={projectId}
+            incidentId={incident.id}
+            analyses={analyses}
+            selectedId={selectedAnalysisId}
+          />
+
           <Panel title="Timeline">
             <IncidentTimeline projectId={projectId} entries={timeline} />
             <div className="border-t border-border pt-4">
@@ -126,6 +145,14 @@ export default async function IncidentPage({
                 {!incident.resolvedAt && " so far"}
               </dd>
             </dl>
+          </Panel>
+
+          <Panel title="Ask the assistant">
+            <IncidentChat
+              projectId={projectId}
+              incidentId={incident.id}
+              messages={messages}
+            />
           </Panel>
 
           <Panel title="Similar incidents">
