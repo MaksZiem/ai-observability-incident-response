@@ -1,9 +1,11 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { redirect } from "next/navigation";
 import { ApiError, apiFetch } from "@/lib/api";
 import { ENVIRONMENTS } from "@/features/projects/labels";
 import type {
+  Project,
   ProjectEnvironment,
   ProjectWithApiKey,
 } from "@/features/projects/types";
@@ -59,4 +61,53 @@ export async function createProject(
     }
     return { ...entered, error: "Could not create the project. Try again." };
   }
+}
+
+export type UpdateProjectState = {
+  error: string | null;
+  saved: boolean;
+};
+
+export async function updateProject(
+  projectId: string,
+  _prevState: UpdateProjectState,
+  formData: FormData,
+): Promise<UpdateProjectState> {
+  const name = String(formData.get("name") ?? "").trim();
+  const environment = readEnvironment(formData.get("environment"));
+
+  if (!name) return { error: "Enter a project name.", saved: false };
+  if (name.length > 100) {
+    return { error: "Name must be at most 100 characters.", saved: false };
+  }
+  if (!environment) return { error: "Choose an environment.", saved: false };
+
+  try {
+    await apiFetch<Project>(`/projects/${projectId}`, {
+      method: "PATCH",
+      body: { name, environment },
+    });
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 400) {
+      return { error: error.message, saved: false };
+    }
+    return { error: "Could not save the project. Try again.", saved: false };
+  }
+
+  refresh();
+  return { error: null, saved: true };
+}
+
+export async function rotateApiKey(projectId: string) {
+  const { apiKey } = await apiFetch<ProjectWithApiKey>(
+    `/projects/${projectId}/api-key/rotate`,
+    { method: "POST" },
+  );
+  refresh();
+  return apiKey;
+}
+
+export async function deleteProject(projectId: string) {
+  await apiFetch(`/projects/${projectId}`, { method: "DELETE" });
+  redirect("/");
 }
