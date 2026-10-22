@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import {
+  Activity,
   Bell,
   Boxes,
   Bug,
@@ -180,7 +181,21 @@ export function Sidebar({ user, projects }: SidebarProps) {
           </nav>
         )}
 
-        <div className="mt-auto flex items-center gap-2 border-t border-border px-2.5 pt-3">
+        <Link
+          href="/platform"
+          onClick={() => setOpen(false)}
+          aria-current={pathname === "/platform" ? "page" : undefined}
+          className={`mt-auto mb-2 flex items-center gap-2.5 rounded-md px-2.5 py-1.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+            pathname === "/platform"
+              ? "bg-surface-2 text-fg"
+              : "text-fg-muted hover:bg-surface-hover hover:text-fg"
+          }`}
+        >
+          <Activity className="size-4" strokeWidth={1.75} aria-hidden />
+          Platform health
+        </Link>
+
+        <div className="flex items-center gap-2 border-t border-border px-2.5 pt-3">
           <div className="min-w-0 flex-1">
             <p className="truncate text-[13px] font-medium">{user.name}</p>
             <p className="truncate text-xs text-fg-muted">{user.email}</p>

@@ -5,27 +5,33 @@ const API_URL = process.env.API_URL ?? "http://localhost:3001/api";
 
 export class ApiError extends Error {
   status: number;
+  body: unknown;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, body: unknown = null) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    this.body = body;
   }
 }
 
-async function readErrorMessage(response: Response) {
+function messageOf(body: unknown, fallback: string) {
+  if (typeof body !== "object" || body === null || !("message" in body)) {
+    return fallback;
+  }
+  const { message } = body;
+  if (Array.isArray(message)) return message.join(", ");
+  return typeof message === "string" ? message : fallback;
+}
+
+async function toApiError(response: Response) {
   const fallback = response.statusText || "Request failed";
 
   try {
     const body: unknown = await response.json();
-    if (typeof body !== "object" || body === null || !("message" in body)) {
-      return fallback;
-    }
-    const { message } = body;
-    if (Array.isArray(message)) return message.join(", ");
-    return typeof message === "string" ? message : fallback;
+    return new ApiError(response.status, messageOf(body, fallback), body);
   } catch {
-    return fallback;
+    return new ApiError(response.status, fallback);
   }
 }
 
@@ -57,9 +63,7 @@ export async function apiFetch<T>(
 
   if (auth && response.status === 401) redirect("/login");
 
-  if (!response.ok) {
-    throw new ApiError(response.status, await readErrorMessage(response));
-  }
+  if (!response.ok) throw await toApiError(response);
 
   if (response.status === 204) return undefined as T;
 
