@@ -14,9 +14,14 @@ function incidentApiPath(projectId: string, incidentId: string) {
   return `/projects/${projectId}/incidents/${incidentId}`;
 }
 
-export function listIncidents(projectId: string, status?: IncidentStatus) {
+export function listIncidents(
+  projectId: string,
+  status?: IncidentStatus,
+  limit?: number,
+) {
   const query = new URLSearchParams();
   if (status) query.set("status", status);
+  if (limit) query.set("limit", String(limit));
   return apiFetch<Incident[]>(`/projects/${projectId}/incidents?${query}`);
 }
 

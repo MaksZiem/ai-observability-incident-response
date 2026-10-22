@@ -46,7 +46,7 @@ export default async function LogsPage({
           />
         ) : (
           <LogStream
-            key={JSON.stringify(filter)}
+            key={JSON.stringify({ ...filters, range })}
             projectId={projectId}
             filter={filter}
             initialPage={page}

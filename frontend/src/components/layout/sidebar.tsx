@@ -24,6 +24,9 @@ import { logout } from "@/features/auth/actions";
 import type { User } from "@/features/auth/types";
 import { ProjectSwitcher } from "@/features/projects/components/project-switcher";
 import type { Project } from "@/features/projects/types";
+import { LiveIndicator } from "@/features/realtime/components/live-indicator";
+import type { OpenCounts } from "@/features/realtime/types";
+import { useProjectLive } from "@/features/realtime/use-project-live";
 
 type NavItem = {
   section: string;
@@ -54,6 +57,14 @@ function sectionHref(projectId: string, section: string) {
     : `/projects/${projectId}`;
 }
 
+const MAX_COUNT = 99;
+
+function countFor(section: string, counts: OpenCounts | null) {
+  if (section === "errors") return counts?.errors ?? 0;
+  if (section === "incidents") return counts?.incidents ?? 0;
+  return 0;
+}
+
 function isActive(pathname: string, href: string, section: string) {
   if (!section) return pathname === href;
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -77,6 +88,7 @@ export function Sidebar({ user, projects }: SidebarProps) {
   const pathname = usePathname();
   const { projectId } = useParams<{ projectId?: string }>();
   const [open, setOpen] = useState(false);
+  const { status, counts } = useProjectLive(projectId);
 
   useEffect(() => {
     if (!open) return;
@@ -131,8 +143,9 @@ export function Sidebar({ user, projects }: SidebarProps) {
           </button>
         </div>
 
-        <div className="px-1 pb-4">
+        <div className="flex flex-col gap-2 px-1 pb-4">
           <ProjectSwitcher projects={projects} currentProjectId={projectId} />
+          {projectId && <LiveIndicator status={status} />}
         </div>
 
         {projectId && (
@@ -140,6 +153,7 @@ export function Sidebar({ user, projects }: SidebarProps) {
             {NAV_ITEMS.map(({ section, label, icon: Icon }) => {
               const href = sectionHref(projectId, section);
               const active = isActive(pathname, href, section);
+              const count = countFor(section, counts);
 
               return (
                 <Link
@@ -155,6 +169,11 @@ export function Sidebar({ user, projects }: SidebarProps) {
                 >
                   <Icon className="size-4" strokeWidth={1.75} aria-hidden />
                   {label}
+                  {count > 0 && (
+                    <span className="ml-auto rounded-full bg-danger/15 px-1.5 font-mono text-[11px] text-danger tabular-nums">
+                      {count > MAX_COUNT ? `${MAX_COUNT}+` : count}
+                    </span>
+                  )}
                 </Link>
               );
             })}

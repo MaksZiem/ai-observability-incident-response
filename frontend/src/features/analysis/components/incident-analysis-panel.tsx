@@ -1,13 +1,10 @@
 import Link from "next/link";
-import { AutoRefresh } from "@/components/ui/auto-refresh";
 import { formatCount, formatDayTime } from "@/lib/format";
 import { AnalysisReport } from "@/features/analysis/components/analysis-report";
 import { AnalysisStatusBadge } from "@/features/analysis/components/analysis-status-badge";
 import { RequestAnalysisButton } from "@/features/analysis/components/request-analysis-button";
 import type { IncidentAnalysis } from "@/features/analysis/types";
 import { incidentPath } from "@/features/incidents/paths";
-
-const PENDING_REFRESH_MS = 3000;
 
 type IncidentAnalysisPanelProps = {
   projectId: string;
@@ -29,8 +26,6 @@ export function IncidentAnalysisPanel({
 
   return (
     <section className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-[18px]">
-      {isPending && <AutoRefresh intervalMs={PENDING_REFRESH_MS} />}
-
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <h2 className="text-base font-semibold">AI analysis</h2>

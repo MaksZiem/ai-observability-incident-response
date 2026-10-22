@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { loadMoreLogs } from "@/features/logs/actions";
 import { LogRow } from "@/features/logs/components/log-row";
 import type { LogsFilter } from "@/features/logs/queries";
-import type { LogPage } from "@/features/logs/types";
+import type { Log, LogPage } from "@/features/logs/types";
 
 type LogStreamProps = {
   projectId: string;
@@ -13,17 +13,28 @@ type LogStreamProps = {
   initialPage: LogPage;
 };
 
+function prependNew(fresh: Log[], current: Log[]) {
+  const known = new Set(current.map((log) => log.id));
+  return [...fresh.filter((log) => !known.has(log.id)), ...current];
+}
+
 export function LogStream({ projectId, filter, initialPage }: LogStreamProps) {
   const [logs, setLogs] = useState(initialPage.items);
   const [cursor, setCursor] = useState(initialPage.nextCursor);
+  const [page, setPage] = useState(initialPage);
   const [pending, startTransition] = useTransition();
+
+  if (page !== initialPage) {
+    setPage(initialPage);
+    setLogs((current) => prependNew(initialPage.items, current));
+  }
 
   function loadMore() {
     if (!cursor) return;
     startTransition(async () => {
-      const page = await loadMoreLogs(projectId, filter, cursor);
-      setLogs((current) => [...current, ...page.items]);
-      setCursor(page.nextCursor);
+      const next = await loadMoreLogs(projectId, filter, cursor);
+      setLogs((current) => [...current, ...next.items]);
+      setCursor(next.nextCursor);
     });
   }
 

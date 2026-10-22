@@ -10,12 +10,13 @@ import type {
 type ErrorGroupsFilter = {
   status?: ErrorStatus;
   service?: string;
+  limit?: number;
 };
 
 export function listErrorGroups(projectId: string, filter: ErrorGroupsFilter) {
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(filter)) {
-    if (value !== undefined) query.set(key, value);
+    if (value !== undefined) query.set(key, String(value));
   }
   return apiFetch<ErrorGroup[]>(`/projects/${projectId}/errors?${query}`);
 }
