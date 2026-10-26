@@ -6,6 +6,7 @@ import {
 } from '@nestjs/terminus';
 import { Public } from '../auth/decorators/public.decorator.js';
 import { AlertSchedulerHealthIndicator } from './alert-scheduler.health.js';
+import { IngestQueueHealthIndicator } from './ingest-queue.health.js';
 
 @Public()
 @Controller('health')
@@ -14,6 +15,7 @@ export class HealthController {
     private readonly health: HealthCheckService,
     private readonly db: TypeOrmHealthIndicator,
     private readonly alertScheduler: AlertSchedulerHealthIndicator,
+    private readonly ingestQueue: IngestQueueHealthIndicator,
   ) {}
 
   @Get()
@@ -22,6 +24,7 @@ export class HealthController {
     return this.health.check([
       () => this.db.pingCheck('database'),
       () => this.alertScheduler.check('alertScheduler'),
+      () => this.ingestQueue.check('ingestQueue'),
     ]);
   }
 }

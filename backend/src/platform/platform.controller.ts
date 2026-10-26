@@ -6,7 +6,10 @@ export class PlatformController {
   constructor(private readonly platformStats: PlatformStatsService) {}
 
   @Get('stats')
-  getStats() {
-    return this.platformStats.snapshot();
+  async getStats() {
+    return {
+      ...this.platformStats.snapshot(),
+      queue: await this.platformStats.queueDepth(),
+    };
   }
 }

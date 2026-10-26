@@ -4,7 +4,7 @@ NestJS + TypeORM + PostgreSQL. Zbiera logi, spany, błędy i deploymenty, liczy 
 
 ## Uruchomienie
 
-Wymagania: Node 24, PostgreSQL.
+Wymagania: Node 24, PostgreSQL, Redis (kolejka ingestu).
 
 ```bash
 psql -d postgres -c "CREATE ROLE observability WITH LOGIN PASSWORD 'observability';"
@@ -24,6 +24,8 @@ API działa pod `http://localhost:3001/api`, health check pod `/api/health`.
 | Zmienna | Opis |
 |---|---|
 | `DATABASE_URL` | baza aplikacji |
+| `REDIS_URL` | Redis dla kolejki ingestu (domyślnie `redis://localhost:6379`) |
+| `QUEUE_PREFIX` | prefiks kluczy kolejki w Redisie (domyślnie `observability`; testy e2e używają `observability-test`) |
 | `JWT_SECRET` | min. 32 znaki, np. `openssl rand -base64 48` |
 | `JWT_EXPIRES_IN_SECONDS` | ważność tokena dostępu (domyślnie 3600) |
 | `GEMINI_API_KEY` | klucz z aistudio.google.com |
@@ -57,6 +59,15 @@ deploy `v1.42.3` (zmniejszenie puli połączeń do 5) → po 4 minutach wzrost l
 → alert tworzy incydent z podpiętymi dowodami. Do tego dwa historyczne, rozwiązane incydenty do wyszukiwania podobnych.
 Adres API można zmienić przez `DEMO_API_URL`.
 
+## Kolejka ingestu
+
+`POST /ingest/logs`, `/ingest/spans` i `/ingest/errors` po walidacji i sprawdzeniu klucza API wrzucają batch do kolejki BullMQ (`ingest`) i od razu odpowiadają `202 { accepted }`. Worker (`IngestProcessor`, 4 joby równolegle) zapisuje go przez `LogsService`, `TracesService` i `ErrorsService`.
+
+- Brakujący `timestamp` logu lub błędu jest uzupełniany czasem przyjęcia requestu, zanim batch trafi do kolejki.
+- Nieudany zapis (np. baza niedostępna) jest ponawiany 8 razy z wykładniczym odstępem od 2 s (łącznie ok. 8 minut), potem job trafia do kolejki `ingest-dead-letter` razem z błędem — nic nie ginie po cichu.
+- Głębokość kolejki, ponowienia, dead-letter i opóźnienie kolejki są w `GET /platform/stats` (`queue`, `queueLagMs`, `ingest.*.stored/retried/deadLettered`), a dostępność Redisa w `GET /health` (`ingestQueue`).
+- `POST /ingest/deployments` zostaje synchroniczny, bo zwraca utworzony deployment.
+
 ## API
 
 Wszystkie ścieżki mają prefiks `/api`.
@@ -79,7 +90,9 @@ Wszystkie ścieżki mają prefiks `/api`.
 
 ## Znane ograniczenia
 
-- Ingest zapisuje synchronicznie, bez kolejki — restart w trakcie analizy AI zostawia ją w stanie `pending`.
+- Restart w trakcie analizy AI zostawia ją w stanie `pending`.
+- Kolejka daje dostarczenie „co najmniej raz”: jeśli worker padnie po zapisie, a przed potwierdzeniem joba, batch zapisze się ponownie.
+- Joby z `ingest-dead-letter` nie mają jeszcze endpointu do ponownego przetworzenia — trzeba je przenieść ręcznie (np. skryptem z `bullmq`).
 - Scheduler alertów, liczniki rate limitingu, szyna zdarzeń SSE i statystyki platformy żyją w pamięci jednego procesu; przy wielu instancjach trzeba je przenieść do Redisa.
 - Projekt ma jednego właściciela — brak członków zespołu, ról i przypisywania incydentów.
 - `/platform/stats` pokazuje statystyki całej platformy każdemu zalogowanemu użytkownikowi; w produkcji powinien być tylko dla administratorów.

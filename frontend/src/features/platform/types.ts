@@ -11,8 +11,18 @@ export type Percentiles = {
 export type IngestCounters = {
   requests: number;
   items: number;
+  stored: number;
   rejected: number;
   failed: number;
+  retried: number;
+  deadLettered: number;
+};
+
+export type QueueDepth = {
+  waiting: number;
+  active: number;
+  delayed: number;
+  deadLettered: number;
 };
 
 export type PlatformStats = {
@@ -21,6 +31,8 @@ export type PlatformStats = {
   ingest: Record<TelemetryType, IngestCounters>;
   ingestDurationMs: Percentiles;
   telemetryLagMs: Percentiles;
+  queueLagMs: Percentiles;
+  queue: QueueDepth | null;
   outcomes: Record<OutcomeKind, { succeeded: number; failed: number }>;
   alerts: { runs: number; failedEvaluations: number; lastRunAt: string | null };
 };

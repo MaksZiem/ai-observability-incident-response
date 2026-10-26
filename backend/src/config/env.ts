@@ -7,6 +7,8 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3001),
   FRONTEND_URL: z.url().default('http://localhost:3000'),
   DATABASE_URL: z.url(),
+  REDIS_URL: z.url().default('redis://localhost:6379'),
+  QUEUE_PREFIX: z.string().min(1).default('observability'),
   JWT_SECRET: z.string().min(32),
   JWT_EXPIRES_IN_SECONDS: z.coerce.number().int().positive().default(3600),
   GEMINI_API_KEY: z.string().min(1),

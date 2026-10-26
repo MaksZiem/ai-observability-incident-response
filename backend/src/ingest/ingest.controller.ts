@@ -12,17 +12,16 @@ import { Throttle } from '@nestjs/throttler';
 import { Public } from '../auth/decorators/public.decorator.js';
 import { DeploymentsService } from '../deployments/deployments.service.js';
 import { CreateDeploymentDto } from '../deployments/dto/create-deployment.dto.js';
-import { ErrorsService } from '../errors/errors.service.js';
-import { LogsService } from '../logs/logs.service.js';
 import { IngestExceptionFilter } from '../platform/ingest-exception.filter.js';
 import { IngestStatsInterceptor } from '../platform/ingest-stats.interceptor.js';
 import type { Project } from '../projects/entities/project.entity.js';
 import { CurrentProject } from './decorators/current-project.decorator.js';
 import { IngestErrorsDto } from './dto/ingest-errors.dto.js';
 import { IngestLogsDto } from './dto/ingest-logs.dto.js';
-import { ApiKeyGuard } from './guards/api-key.guard.js';
-import { TracesService } from '../traces/traces.service.js';
 import { IngestSpansDto } from './dto/ingest-spans.dto.js';
+import { ApiKeyGuard } from './guards/api-key.guard.js';
+import { withReceivedAt } from './ingest-queue.js';
+import { IngestQueueService } from './ingest-queue.service.js';
 
 @Public()
 @Throttle({ default: { limit: 1200, ttl: 60_000 } })
@@ -32,9 +31,7 @@ import { IngestSpansDto } from './dto/ingest-spans.dto.js';
 @Controller('ingest')
 export class IngestController {
   constructor(
-    private readonly logsService: LogsService,
-    private readonly tracesService: TracesService,
-    private readonly errorsService: ErrorsService,
+    private readonly queueService: IngestQueueService,
     private readonly deploymentsService: DeploymentsService,
   ) {}
 
@@ -44,7 +41,11 @@ export class IngestController {
     @Body() dto: IngestLogsDto,
     @CurrentProject() project: Project,
   ) {
-    await this.logsService.createMany(project.id, dto.logs);
+    await this.queueService.enqueue({
+      type: 'logs',
+      projectId: project.id,
+      items: withReceivedAt(dto.logs, new Date()),
+    });
     return { accepted: dto.logs.length };
   }
 
@@ -54,7 +55,11 @@ export class IngestController {
     @Body() dto: IngestSpansDto,
     @CurrentProject() project: Project,
   ) {
-    await this.tracesService.createMany(project.id, dto.spans);
+    await this.queueService.enqueue({
+      type: 'spans',
+      projectId: project.id,
+      items: dto.spans,
+    });
     return { accepted: dto.spans.length };
   }
 
@@ -64,7 +69,11 @@ export class IngestController {
     @Body() dto: IngestErrorsDto,
     @CurrentProject() project: Project,
   ) {
-    await this.errorsService.ingest(project.id, dto.errors);
+    await this.queueService.enqueue({
+      type: 'errors',
+      projectId: project.id,
+      items: withReceivedAt(dto.errors, new Date()),
+    });
     return { accepted: dto.errors.length };
   }
 

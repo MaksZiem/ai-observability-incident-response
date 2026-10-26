@@ -16,4 +16,5 @@ export const OUTCOME_LABELS: Record<OutcomeKind, string> = {
 export const CHECK_LABELS: Record<string, string> = {
   database: "Database",
   alertScheduler: "Alert scheduler",
+  ingestQueue: "Ingest queue (Redis)",
 };

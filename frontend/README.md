@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frontend — AI Observability & Incident Response
 
-## Getting Started
+Next.js 16 (App Router, Server Components, Server Actions) + Tailwind 4. Dashboard do logów, metryk, trace'ów, błędów, deploymentów, incydentów i analizy AI. Design system: [`DESIGN.md`](DESIGN.md).
 
-First, run the development server:
+## Uruchomienie
+
+Wymagania: Node 24 i działający backend (`../backend`).
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Aplikacja działa pod `http://localhost:3000`. Po `npm run demo` w backendzie można się zalogować jako `demo@example.com` / `demo-password`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Zmienne środowiskowe (`.env.local`)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Zmienna | Opis |
+|---|---|
+| `API_URL` | adres API dla serwera Next (Server Components i Server Actions) |
+| `NEXT_PUBLIC_API_URL` | adres API dla przeglądarki — połączenie SSE z `/projects/:id/stream`; po zmianie trzeba zrestartować `npm run dev` |
 
-## Learn More
+## Skrypty
 
-To learn more about Next.js, take a look at the following resources:
+| Skrypt | Co robi |
+|---|---|
+| `npm run dev` | serwer deweloperski |
+| `npm run build` / `npm start` | build produkcyjny i jego uruchomienie |
+| `npm test` | testy Vitest czystych funkcji (`*.spec.ts`) |
+| `npm run lint` | ESLint |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Struktura
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `src/app/` — trasy: `(auth)` (logowanie, rejestracja), `(app)` (powłoka z sidebarem), `projects/[projectId]/…` (sekcje projektu), `platform` (stan samej platformy).
+- `src/features/<domena>/` — typy, zapytania (`queries.ts`), Server Actions (`actions.ts`), komponenty i helpery jednej domeny.
+- `src/components/ui/` — komponenty design systemu bez wiedzy o domenie; `src/components/layout/` — sidebar.
+- `src/lib/` — infrastruktura: klient API, sesja, formatowanie.
 
-## Deploy on Vercel
+## Jak to działa
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Token JWT jest w ciasteczku `httpOnly`; tylko serwer Next rozmawia z API (`lib/api.ts`).
+- Filtry i zakres czasu są w URL, więc każdy widok da się udostępnić linkiem.
+- Real-time: sidebar otwiera jedno połączenie SSE na projekt (token z `POST /auth/stream-token`) i po zdarzeniach odświeża tylko strony, których zdarzenie dotyczy.

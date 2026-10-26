@@ -9,7 +9,10 @@ export default defineConfig({
     root: './',
     include: ['**/*.e2e-spec.ts'],
     globalSetup: ['./test/global-setup.ts'],
-    env: { DATABASE_URL: testDatabaseUrl() },
+    env: {
+      DATABASE_URL: testDatabaseUrl(),
+      QUEUE_PREFIX: 'observability-test',
+    },
     fileParallelism: false,
     testTimeout: 30_000,
     hookTimeout: 60_000,

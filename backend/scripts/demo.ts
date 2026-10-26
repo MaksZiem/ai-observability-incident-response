@@ -10,6 +10,8 @@ const REQUEST_INTERVAL_MS = 15_000;
 const DEPLOY_AGO_MS = 40 * MINUTE_MS;
 const DEGRADATION_DELAY_MS = 4 * MINUTE_MS;
 const BATCH_SIZE = 1000;
+const QUEUE_POLL_MS = 250;
+const QUEUE_DRAIN_TIMEOUT_MS = 60_000;
 
 type Json = Record<string, unknown>;
 
@@ -257,6 +259,32 @@ async function sendInBatches(
   }
 }
 
+interface QueueDepth {
+  waiting: number;
+  active: number;
+  delayed: number;
+}
+
+async function waitForIngestQueue(token: string): Promise<void> {
+  const deadline = Date.now() + QUEUE_DRAIN_TIMEOUT_MS;
+
+  for (;;) {
+    const { queue } = await call<{ queue: QueueDepth | null }>(
+      'GET',
+      '/platform/stats',
+      { token },
+    );
+
+    if (queue && queue.waiting + queue.active + queue.delayed === 0) {
+      return;
+    }
+    if (Date.now() > deadline) {
+      throw new Error('The ingest queue did not drain in time');
+    }
+    await new Promise((resolve) => setTimeout(resolve, QUEUE_POLL_MS));
+  }
+}
+
 async function createPastIncident(
   token: string,
   projectId: string,
@@ -318,6 +346,7 @@ async function main(): Promise<void> {
   await sendInBatches(apiKey, 'spans', telemetry.spans);
   await sendInBatches(apiKey, 'logs', telemetry.logs);
   await sendInBatches(apiKey, 'errors', telemetry.errors);
+  await waitForIngestQueue(token);
 
   const errorGroups = await call<{ id: string; type: string }[]>(
     'GET',

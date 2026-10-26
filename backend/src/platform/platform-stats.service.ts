@@ -6,14 +6,26 @@ const SAMPLE_CAPACITY = 1000;
 
 export type OutcomeKind = 'analyses' | 'chat' | 'webhooks';
 
-interface IngestCounters {
-  requests: number;
-  items: number;
-  rejected: number;
-  failed: number;
+export interface QueueDepth {
+  waiting: number;
+  active: number;
+  delayed: number;
+  deadLettered: number;
 }
 
-interface OutcomeCounters {
+type QueueDepthSource = () => Promise<QueueDepth>;
+
+export interface IngestCounters {
+  requests: number;
+  items: number;
+  stored: number;
+  rejected: number;
+  failed: number;
+  retried: number;
+  deadLettered: number;
+}
+
+export interface OutcomeCounters {
   succeeded: number;
   failed: number;
 }
@@ -24,6 +36,7 @@ export interface PlatformStats {
   ingest: Record<TelemetryType, IngestCounters>;
   ingestDurationMs: Percentiles;
   telemetryLagMs: Percentiles;
+  queueLagMs: Percentiles;
   outcomes: Record<OutcomeKind, OutcomeCounters>;
   alerts: { runs: number; failedEvaluations: number; lastRunAt: Date | null };
 }
@@ -35,7 +48,15 @@ export class PlatformStatsService {
   private readonly ingest = Object.fromEntries(
     TELEMETRY_TYPES.map((type) => [
       type,
-      { requests: 0, items: 0, rejected: 0, failed: 0 },
+      {
+        requests: 0,
+        items: 0,
+        stored: 0,
+        rejected: 0,
+        failed: 0,
+        retried: 0,
+        deadLettered: 0,
+      },
     ]),
   ) as Record<TelemetryType, IngestCounters>;
 
@@ -47,9 +68,11 @@ export class PlatformStatsService {
 
   private readonly ingestDuration = new SampleWindow(SAMPLE_CAPACITY);
   private readonly telemetryLag = new SampleWindow(SAMPLE_CAPACITY);
+  private readonly queueLag = new SampleWindow(SAMPLE_CAPACITY);
   private alertRuns = 0;
   private failedEvaluations = 0;
   private lastAlertRun: Date | null = null;
+  private queueDepthSource: QueueDepthSource | null = null;
 
   recordIngestAccepted(
     type: TelemetryType,
@@ -61,6 +84,27 @@ export class PlatformStatsService {
     this.ingest[type].items += items;
     this.ingestDuration.add(durationMs);
     lagsMs.forEach((lag) => this.telemetryLag.add(lag));
+  }
+
+  setQueueDepthSource(source: QueueDepthSource): void {
+    this.queueDepthSource = source;
+  }
+
+  async queueDepth(): Promise<QueueDepth | null> {
+    return this.queueDepthSource ? this.queueDepthSource() : null;
+  }
+
+  recordIngestStored(type: TelemetryType, items: number, lagMs: number): void {
+    this.ingest[type].stored += items;
+    this.queueLag.add(lagMs);
+  }
+
+  recordIngestRetried(type: TelemetryType): void {
+    this.ingest[type].retried += 1;
+  }
+
+  recordIngestDeadLettered(type: TelemetryType, items: number): void {
+    this.ingest[type].deadLettered += items;
   }
 
   recordIngestRejected(type: TelemetryType, status: number): void {
@@ -96,6 +140,7 @@ export class PlatformStatsService {
       ingest: this.ingest,
       ingestDurationMs: this.ingestDuration.percentiles(),
       telemetryLagMs: this.telemetryLag.percentiles(),
+      queueLagMs: this.queueLag.percentiles(),
       outcomes: this.outcomes,
       alerts: {
         runs: this.alertRuns,

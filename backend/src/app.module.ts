@@ -1,3 +1,4 @@
+import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
@@ -22,6 +23,7 @@ import { AlertsModule } from './alerts/alerts.module.js';
 import { RealtimeModule } from './realtime/realtime.module.js';
 import { PlatformModule } from './platform/platform.module.js';
 import { HealthModule } from './health/health.module.js';
+import { redisConnection } from './ingest/redis-connection.js';
 
 @Module({
   imports: [
@@ -35,6 +37,13 @@ import { HealthModule } from './health/health.module.js';
       inject: [ConfigService],
       useFactory: (config: ConfigService<Env, true>) =>
         createDataSourceOptions(config.get('DATABASE_URL', { infer: true })),
+    }),
+    BullModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<Env, true>) => ({
+        connection: redisConnection(config.get('REDIS_URL', { infer: true })),
+        prefix: config.get('QUEUE_PREFIX', { infer: true }),
+      }),
     }),
     RealtimeModule,
     PlatformModule,

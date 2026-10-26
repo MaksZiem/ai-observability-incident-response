@@ -11,9 +11,12 @@ import {
 import type { ChatPrompt } from '../src/analysis/chat-prompt.js';
 import { AppModule } from '../src/app.module.js';
 import { configureApp } from '../src/app.setup.js';
+import { IngestQueueService } from '../src/ingest/ingest-queue.service.js';
 import { User } from '../src/users/entities/user.entity.js';
 
 const MINUTE_MS = 60_000;
+const QUEUE_POLL_MS = 50;
+const QUEUE_DRAIN_TIMEOUT_MS = 10_000;
 
 class StubAnalysisModel extends AnalysisModel {
   analyze(): Promise<AnalysisModelOutput> {
@@ -113,6 +116,18 @@ describe('Incident investigation flow (e2e)', () => {
     return response.body.accessToken as string;
   }
 
+  async function waitForIngestQueue(): Promise<void> {
+    const queue = app.get(IngestQueueService);
+    const deadline = Date.now() + QUEUE_DRAIN_TIMEOUT_MS;
+
+    while (!(await queue.isIdle())) {
+      if (Date.now() > deadline) {
+        throw new Error('The ingest queue did not drain in time');
+      }
+      await new Promise((resolve) => setTimeout(resolve, QUEUE_POLL_MS));
+    }
+  }
+
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(AnalysisModel)
@@ -208,6 +223,8 @@ describe('Incident investigation flow (e2e)', () => {
       .set('X-Api-Key', 'obs_invalid')
       .send({ logs: [] })
       .expect(401);
+
+    await waitForIngestQueue();
 
     const logs = await api()
       .get(`/api/projects/${projectId}/logs?traceId=e2e-14-0`)
